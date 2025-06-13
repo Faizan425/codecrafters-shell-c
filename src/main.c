@@ -2,42 +2,19 @@
 #include <stdlib.h>
 #include<string.h>
 int check_echo(char  str[]){
-	char hold[5];
-	int i=0;
-	while(i<strlen(str) && str[i]!=' '){
-		hold[i]=str[i];
-		i++;
-	}
-	hold[i]='\0';
-
-	if(strcmp(hold,"echo")==0){
+	// check that the input contains echo
+	if(strncmp(input, "echo",4)!=0) return 0;
+	if(input[4] == '\0' || input[4] == ' ')
 		return 1;
-	}
-	else{
-		return 0;
-	}
+	return 0;
 }
 
 char* remove_command_and_get_string(char input[] ){
-	int i=0;
-	while(i<strlen(input)){
-		if(input[i]!=' '){
-		break;
-		}
-		i++;
-	}
-	i=i+1;
-	int new_len=strlen(input) - i;
-	int w=0;
-	char string[new_len];
-	while(w<new_len){
-	string[w]=input[i];
-	w++;
+	int i=4;
+	while(input[i] == ' '){
 	i++;
 	}
-	string[w++]='\0';
-	input=string;
-	return input;
+	return &input[i];
 }
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -61,7 +38,8 @@ int main(int argc, char *argv[]) {
 	  flag=0;
   }
   else if(check_echo(input)){
-	  printf("%s\n",remove_command_and_get_string(input));
+	  char *arg = remove_command_and_get_string(input);
+	  printf("%s\n",arg);
   }
   else{
   printf("%s: command not found\n", input);
