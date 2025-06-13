@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   if(input[0]=='\0'){
 	  continue;
   }
-  if(strcmp(input, "exit")==0){
+  if(strcmp(input, "exit 0")==0){
 	  flag=0;
   }
   else{
