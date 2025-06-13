@@ -3,8 +3,8 @@
 #include<string.h>
 int check_echo(char  str[]){
 	// check that the input contains echo
-	if(strncmp(input, "echo",4)!=0) return 0;
-	if(input[4] == '\0' || input[4] == ' ')
+	if(strncmp(str, "echo",4)!=0) return 0;
+	if(str[4] == '\0' || str[4] == ' ')
 		return 1;
 	return 0;
 }
