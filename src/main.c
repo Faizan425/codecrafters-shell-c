@@ -3,7 +3,8 @@
 #include<string.h>
 int main(int argc, char *argv[]) {
   // Flush after every printf
-  while(1){
+  int flag=1;
+  while(flag){
   setbuf(stdout, NULL);
 
   // Uncomment this block to pass the first stage
@@ -11,9 +12,19 @@ int main(int argc, char *argv[]) {
 
   // Wait for user input
   char input[100];
-  fgets(input, 100, stdin);
+  if(fgets(input, 100, stdin) == NULL){
+	  printf("\n");
+  }
   input[strcspn(input, "\n")]= '\0';
+  if(input[0]=='\0'){
+	  continue;
+  }
+  if(strcmp(input, "exit")==0){
+	  flag=0;
+  }
+  else{
   printf("%s: command not found\n", input);
+  }
   }
   return 0;
 }
