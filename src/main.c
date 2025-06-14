@@ -70,8 +70,7 @@ void execute_type(char input []){
 	}
 	if(strchr(arg,'/')!=NULL){
 		if(access(arg,X_OK)==0){
-			flag=1;
-			printf("%s is %s\n", arg,arg);
+			printf("%s\n", arg);
 		}
 		else{
 			printf("%s: not found\n",arg);
@@ -92,26 +91,24 @@ else{
 return;
 }
 char path_token[PATH_MAX];
-char  *mutable_copy= strdup(path_env);
-char *p=mutable_copy;
-if(!mutable_copy){
+char  *path_copy= strdup(path_env);
+if(!path_copy){
 	perror("strdup");
 	exit(1);
 }
+char *p=path_copy;
 
 char *pointer_to_path_token;
 while((pointer_to_path_token = strsep(&p, ":")) !=NULL){
-	strncpy(path_token,pointer_to_path_token,PATH_MAX-1);
-	path_token[PATH_MAX-1]='\0';
-	char *pointer_to_candidate_path=build_path(path_token,arg,candidate_path,sizeof(candidate_path));
-	strncpy(candidate_path, pointer_to_candidate_path, strlen(candidate_path)-1);
-	candidate_path[strlen(candidate_path)-1]='\0';
+	if(build_path(pointer_to_path_token,arg,candidate_path,sizeof(candidate_path))==NULL)
+		continue;
+	
 	if(access(candidate_path, X_OK)==0){
 		flag=1;
 		break;
 	}
 }
-free(mutable_copy);
+free(path_copy);
 if(flag){
 	printf("%s is %s\n",arg,candidate_path);
 }
