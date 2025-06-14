@@ -7,14 +7,22 @@
 
 
 char* build_path(const char *path_token, const char *command,char* candidate_path, size_t candidate_path_size){
-	if(strlen(path_token)+1+strlen(command)+1 > candidate_path_size){return NULL;}
-	snprintf(candidate_path, candidate_path_size,"%s", path_token);
-	if(path_token[0]=='\0'){
-		snprintf(candidate_path, candidate_path_size,"%s./%s",candidate_path,command);
+	//if(strlen(path_token)+1+strlen(command)+1 > candidate_path_size){return NULL;}
+	//snprintf(candidate_path, candidate_path_size,"%s", path_token);
+	//if(path_token[0]=='\0'){
+	//	snprintf(candidate_path, candidate_path_size,"%s./%s",candidate_path,command);
+	//}
+	//else{
+	//	snprintf(candidate_path, candidate_path_size,"%s/%s",candidate_path,command);
+	//}
+	//return candidate_path;
+	const char *use_dir =(path_token[0]== '\0')?".":path_token;
+	size_t dir_len= strlen(use_dir);
+	size_t cmd_len=strlen(command);
+	if(dir_len +1 + cmd_len +1 > candidate_path_size){
+	return NULL;
 	}
-	else{
-		snprintf(candidate_path, candidate_path_size,"%s/%s",candidate_path,command);
-	}
+	snprintf(candidate_path, candidate_path_size, "%s/%s", use_dir, command);
 	return candidate_path;
 }
 int check_valid_command(char* command){
@@ -90,7 +98,7 @@ else{
 }
 return;
 }
-char path_token[PATH_MAX];
+
 char  *path_copy= strdup(path_env);
 if(!path_copy){
 	perror("strdup");
