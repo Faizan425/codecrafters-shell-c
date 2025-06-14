@@ -2,6 +2,14 @@
 #include <stdlib.h>
 #include<string.h>
 #include<ctype.h>
+int check_valid_command(char* command){
+	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0){
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
 static int skip_leading_spaces(const char *s){
 	int i=0;
 	while(s[i] != '\0' && isspace((unsigned char)s[i])){
@@ -29,7 +37,13 @@ void execute_type(char input[]){
 		printf("type : usage : type NAME\n");
 	}
 	else{
-	printf("%s is a shell builtin\n",arg);}
+	if(check_valid_command(arg)){
+		printf("%s is a shell builtin\n",arg);
+	}
+	else{
+		printf("%s: not found\n",arg);
+	}
+	}
 }
 char* remove_command_and_get_string(char input[] ){
 	int i=skip_leading_spaces(input);
