@@ -70,12 +70,14 @@ void execute_type_deprecated(char input[]){
 }
 
 void execute_type(char input []){
-	int flag=0; //flag to indicate if we found the command or not.
+	
 	char *arg=remove_command_and_get_string(input);
-	if(arg[0]=='\0'){
-		printf("type usage type NAME\n");
+	if(check_valid_command(arg)){
+		execute_type_deprecated(input);
 		return;
 	}
+	int flag=0; //flag to indicate if we found the command or not.
+	
 	if(strchr(arg,'/')!=NULL){
 		if(access(arg,X_OK)==0){
 			printf("%s\n", arg);
