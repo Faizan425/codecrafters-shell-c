@@ -2,6 +2,21 @@
 #include <stdlib.h>
 #include<string.h>
 #include<ctype.h>
+#include<unistd.h>
+#include <limits.h>
+
+
+char* build_path(const char *path_token, const char *command,char* candidate_path, size_t candidate_path_size){
+	if(strlen(path_token)+1+strlen(command)+1 > candidate_path_size){return NULL;}
+	snprintf(candidate_path, candidate_path_size,"%s", path_token);
+	if(path_token[0]=='\0'){
+		snprintf(candidate_path, candidate_path_size,"%s./%s",candidate_path,command);
+	}
+	else{
+		snprintf(candidate_path, candidate_path_size,"%s/%s",candidate_path,command);
+	}
+	return candidate_path;
+}
 int check_valid_command(char* command){
 	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0){
 		return 1;
@@ -31,7 +46,7 @@ void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
 	printf("%s\n",arg);
 }
-void execute_type(char input[]){
+void execute_type_deprecated(char input[]){
 	char *arg = remove_command_and_get_string(input);
 	if(arg[0]=='\0'){
 		printf("type : usage : type NAME\n");
@@ -44,6 +59,67 @@ void execute_type(char input[]){
 		printf("%s: not found\n",arg);
 	}
 	}
+}
+
+void execute_type(char input []){
+	int flag=0; //flag to indicate if we found the command or not.
+	char *arg=remove_command_and_get_string(input);
+	if(arg[0]=='\0'){
+		printf("type usage type NAME\n");
+		return;
+	}
+	if(strchr(arg,'/')!=NULL){
+		if(access(arg,X_OK)==0){
+			flag=1;
+			printf("%s is %s\n", arg,arg);
+		}
+		else{
+			printf("%s: not found\n",arg);
+		}
+		return;
+		
+	}
+else{
+char candidate_path[PATH_MAX];
+char *path_env= getenv("PATH");
+if(path_env== NULL||path_env[0]=='\0'){
+if(build_path("", arg, candidate_path, sizeof(candidate_path)) !=NULL && access(candidate_path, X_OK)==0){
+	printf("%s is %s\n",arg, candidate_path);
+}
+else{
+	printf("%s: not found\n",arg);
+}
+return;
+}
+char path_token[PATH_MAX];
+char  *mutable_copy= strdup(path_env);
+char *p=mutable_copy;
+if(!mutable_copy){
+	perror("strdup");
+	exit(1);
+}
+
+char *pointer_to_path_token;
+while((pointer_to_path_token = strsep(&p, ":")) !=NULL){
+	strncpy(path_token,pointer_to_path_token,PATH_MAX-1);
+	path_token[PATH_MAX-1]='\0';
+	char *pointer_to_candidate_path=build_path(path_token,arg,candidate_path,sizeof(candidate_path));
+	strncpy(candidate_path, pointer_to_candidate_path, strlen(candidate_path)-1);
+	candidate_path[strlen(candidate_path)-1]='\0';
+	if(access(candidate_path, X_OK)==0){
+		flag=1;
+		break;
+	}
+}
+free(mutable_copy);
+if(flag){
+	printf("%s is %s\n",arg,candidate_path);
+}
+else{
+	printf("%s: not found\n",arg);
+}
+}
+
 }
 char* remove_command_and_get_string(char input[] ){
 	int i=skip_leading_spaces(input);
