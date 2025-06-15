@@ -146,6 +146,7 @@ int get_arguments(char* inputs_copy, char** argument,int max_args){
 	
 	}
 	argument[argc]=NULL;
+	return argc;
 
 
 
