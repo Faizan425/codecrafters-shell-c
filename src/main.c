@@ -55,12 +55,28 @@ int check_echo(char  str[]){
 
 void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
-	size_t len= strlen(arg);
-	if(len>=2 && arg[0]=='\'' && arg[len-1]=='\''){
-	arg[len-1]='\0';
-	arg++;
+	if(arg[0]=='\0'){
+		printf("\n");
+		return;
 	}
-	printf("%s\n",arg);
+	char *arg_copy = strdup(arg);
+	if(!arg_copy){
+		perror("strdup");
+		return;
+	}
+	char *argv[MAX];
+	int argc=get_arguments(arg_copy, argv,MAX);
+	if(argc==0){
+		printf("\n");
+	}
+	else{
+		for(int i=0; i<argc; i++){
+			if(i>0) putchar(' ');
+			fputs(argv[i], stdout);
+		}
+		putchar('\n');
+	}
+	free(arg_copy);
 }
 void execute_type_deprecated(char input[]){
 	char *arg = remove_command_and_get_string(input);
