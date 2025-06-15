@@ -6,6 +6,7 @@
 #include <limits.h>
 #include<sys/types.h>
 #include<sys/wait.h>
+# define MAX 100
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
 char* build_path(const char *path_token, const char *command,char* candidate_path, size_t candidate_path_size){
@@ -54,6 +55,11 @@ int check_echo(char  str[]){
 
 void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
+	size_t len= strlen(arg);
+	if(len>=2 && arg[0]=='\'' && arg[len-1]=='\''){
+	arg[len-1]='\0';
+	arg++;
+	}
 	printf("%s\n",arg);
 }
 void execute_type_deprecated(char input[]){
@@ -134,23 +140,44 @@ else{
 int get_arguments(char* inputs_copy, char** argument,int max_args){
 	int argc = 0;
 	char *p= inputs_copy;
-	while(*p && isspace((unsigned char)*p)) p++;
+	while(*p && isspace((unsigned char)*p)) p++; // skips leading spaces
 	while(*p !='\0' && argc < max_args){
-		argument[argc++] = p;
-		while(*p && !isspace((unsigned char)*p)) p++;
+		if(*p=='\'' && argc<max_args){
+		
+			p++;
+			char *start =p;
+			
+			while(*p && *p!='\'') p++;
+			if(*p == '\0'){
+				argument[argc++]= start;
+				break;
+			}
+			else{
+				*p='\0';
+				argument[argc++] = start;
+				p++;
+			}
+
+		
+		}
+		else{
+			//unquoted token
+
+			while(*p && isspace((unsigned char) *p)&& *p!='\'') p++; //skip spaces
+			if(*p && *p!='\''){
+			argument[argc++]=p;
+			}
+		while(*p && !isspace((unsigned char)*p)) p++; // advance to the end of token
 		if(*p=='\0') break;
 		*p='\0';
 		p++;
-		while(*p && isspace((unsigned char)*p)) p++;
-
+		}
+		while(*p && isspace((unsigned char)*p)) p++; //skip spaces till the next token
+		
 	
 	}
 	argument[argc]=NULL;
 	return argc;
-
-
-
-
 
 }
 void  execute_custom(char input[]){
@@ -190,10 +217,10 @@ void  execute_custom(char input[]){
 
 char* remove_command_and_get_string(char input[] ){
 	int i=skip_leading_spaces(input);
-	while(input[i] != '\0' && !isspace((unsigned char)input[i])){
+	while(input[i] != '\0' && !isspace((unsigned char)input[i])){ //moving through the command
 	i++;
 	}
-	while(input[i] != '\0' && isspace((unsigned char)input[i])){
+	while(input[i] != '\0' && isspace((unsigned char)input[i])){ // remove spaces after command
 		i++;
 	}
 	return &input[i];
