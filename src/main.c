@@ -71,8 +71,10 @@ void execute_echo(char input[]){
 	}
 	else{
 		for(int i=0; i<argc; i++){
-			if(i>0) putchar(' ');
+			if(i>0) {putchar(' ');}
+			
 			fputs(argv[i], stdout);
+			
 		}
 		putchar('\n');
 	}
@@ -153,7 +155,7 @@ else{
 
 }
 
-int get_arguments(char* inputs_copy, char** argument,int max_args){
+/*int get_arguments(char* inputs_copy, char** argument,int max_args){
 	int argc = 0;
 	char *p= inputs_copy;
 	while(*p && isspace((unsigned char)*p)) p++; // skips leading spaces
@@ -170,11 +172,15 @@ int get_arguments(char* inputs_copy, char** argument,int max_args){
 			}
 			else{
 				*p='\0';
-				argument[argc++] = start;
+				argument[argc] = start;
+				if(*argument[argc]=='\''){
+					*argument[argc]=' ';
+				}
+				argc++;
+				
 				p++;
 			}
-
-		
+			
 		}
 		else{
 			//unquoted token
@@ -183,10 +189,12 @@ int get_arguments(char* inputs_copy, char** argument,int max_args){
 			if(*p && *p!='\''){
 			argument[argc++]=p;
 			}
-		while(*p && !isspace((unsigned char)*p)) p++; // advance to the end of token
+		while(*p &&*p!='\'' && !isspace((unsigned char)*p)) p++; // advance to the end of token
 		if(*p=='\0') break;
+		if(*p!='\''){
 		*p='\0';
 		p++;
+		}
 		}
 		while(*p && isspace((unsigned char)*p)) p++; //skip spaces till the next token
 		
@@ -195,6 +203,58 @@ int get_arguments(char* inputs_copy, char** argument,int max_args){
 	argument[argc]=NULL;
 	return argc;
 
+}*/
+int get_arguments(char *input, char **argv, int buf_size){
+	int argc = 0;
+	const char *p=input;
+	// build tokens into a temporary buffer
+	while(*p){
+		//skip leading whitespaces
+		while(*p && isspace((unsigned char)*p)) p++;
+		if(*p=='\0') break;
+		// build one token
+		char buf[4096];
+		int blen=0;
+		while(*p && !isspace((unsigned char)*p)){
+			if(*p=='\''){ //quoted segment
+				p++;//skip opening
+				while(*p && *p!='\''){
+				if(blen + 1<(int) sizeof(buf)){
+					buf[blen++]=*p;
+				}
+				p++;
+				}
+				if(*p=='\''){
+					p++; //skip closing
+					     //unlike before token continues forming
+				}
+			} else{
+				//unquoted character
+				if(blen +1 <(int)sizeof(buf)){
+					buf[blen++]= *p;
+				}
+				p++;
+			}
+			// continue until whitespace or end
+
+		}
+		buf[blen]= '\0';
+		// store token
+		if(argc < buf_size){
+			argv[argc] = strdup(buf);
+			if(!argv[argc]){
+				perror("strdup");
+				return argc;
+			}
+			argc++;
+		}
+		else{
+		break;
+		}
+		while(*p && isspace((unsigned char)*p)) p++;
+	}
+	argv[argc]= NULL;
+	return argc;
 }
 void  execute_custom(char input[]){
 	char *argument[100];
