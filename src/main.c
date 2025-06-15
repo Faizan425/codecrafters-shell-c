@@ -6,7 +6,7 @@
 #include <limits.h>
 #include<sys/types.h>
 #include<sys/wait.h>
-
+int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
 char* build_path(const char *path_token, const char *command,char* candidate_path, size_t candidate_path_size){
 	//if(strlen(path_token)+1+strlen(command)+1 > candidate_path_size){return NULL;}
@@ -172,7 +172,8 @@ void  execute_custom(char input[]){
 		}
 		if(pid==0){
 			execvp(argument[0], argument);
-			perror(argument[0]);
+			fprintf(stderr, "%s: command not found\n", argument[0]);
+			_exit(127);
 			return;
 		}
 		else{
@@ -180,6 +181,8 @@ void  execute_custom(char input[]){
 			if(waitpid(pid, &status,0)<0){
 				perror("waitpid");
 			}
+			
+
 			free(inputs_copy);
 		}
 			
