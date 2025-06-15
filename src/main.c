@@ -133,7 +133,7 @@ else{
 
 int get_arguments(char* inputs_copy, char** argument,int max_args){
 	int argc = 0;
-	char *p;
+	char *p= inputs_copy;
 	while(*p && isspace((unsigned char)*p)) p++;
 	while(*p !='\0' && argc < max_args){
 		argument[argc++] = p;
@@ -147,6 +147,7 @@ int get_arguments(char* inputs_copy, char** argument,int max_args){
 	}
 	argument[argc]=NULL;
 	return argc;
+
 
 
 
