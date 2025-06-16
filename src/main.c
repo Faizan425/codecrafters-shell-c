@@ -258,6 +258,10 @@ int get_arguments(char *input, char **argv, int buf_size){
 				}
 				else{
 					p++;
+					if(blen +1 < (int)sizeof(buf)){
+						buf[blen++]=*p;
+					}
+					p++;
 					continue;
 				}
 			}
