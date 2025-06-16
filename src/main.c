@@ -219,10 +219,20 @@ int get_arguments(char *input, char **argv, int buf_size){
 			if(*p=='\"'){
 				p++; //skip opening
 				while(*p && *p!='\"'){
+					if(*p!='\\'){ //check for escaped characters
 					if(blen+1 < (int)sizeof(buf)){
 						buf[blen++]=*p;
 					}
 					p++; //keep moving until end of double quotes
+					}
+					else{ //store the escaped charatcer
+						p++;
+						if(blen+1 <(int)sizeof(buf)){
+							buf[blen++]=*p;
+						}
+						p++;
+						continue;
+					}
 
 				}
 				if(*p && *p=='\"'){
