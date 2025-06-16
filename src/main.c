@@ -229,6 +229,7 @@ int get_arguments(char *input, char **argv, int buf_size){
 				p++; // skip closing
 				}
 			}
+
 			else if(*p=='\''){ //quoted segment
 				p++;//skip opening
 				while(*p && *p!='\''){
