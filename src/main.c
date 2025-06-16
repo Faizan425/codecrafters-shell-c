@@ -222,14 +222,14 @@ int get_arguments(char *input, char **argv, int buf_size){
 					if(blen+1 < (int)sizeof(buf)){
 						buf[blen++]=*p;
 					}
-					p++; //keep movin untile end of double quotes
+					p++; //keep moving until end of double quotes
 
 				}
 				if(*p && *p=='\"'){
 				p++; // skip closing
 				}
 			}
-			if(*p=='\''){ //quoted segment
+			else if(*p=='\''){ //quoted segment
 				p++;//skip opening
 				while(*p && *p!='\''){
 				if(blen + 1<(int) sizeof(buf)){
