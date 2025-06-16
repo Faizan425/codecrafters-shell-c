@@ -28,24 +28,26 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	snprintf(candidate_path, candidate_path_size, "%s/%s", use_dir, command);
 	return candidate_path;
 }
-
 int handle_escaped_characters(const char *p, char buf[],int* position, size_t len){
 	int i=1;
-	if(!isdigit(*p)) {
-		if(*position+1 < len){
+	if(!isdigit(*p) || *p>='8') {
+		if(*position < len-1){
 			buf[*position]=*p;
 			(*position)++;
 		}
 		
 	}
 	else{
-	        i=0;
-		while(isdigit(*(p+i))){
+		int digits=0;
+		while(isdigit(*(p+i)) && digits<3 && *(p+i)>='0' && *(p+i)<='7'){
 		   i++;
+		   digits++;
 		}
 		int ascii_code=strtol((const char *)p,NULL,8);
+		if(*position <len-1){
 		buf[*position]=(char)ascii_code;
 	        (*position)++;	
+		}
 	}
 	return i;
 }
@@ -248,7 +250,7 @@ int get_arguments(char *input, char **argv, int buf_size){
 					}
 					else{ //store the escaped charatcer
 					      
-						p++;
+						p++;// skip the escape character
 						int advance=handle_escaped_characters(p,buf,&blen,4096);
 						for(int i=0; i<advance; i++){
 							p++;
