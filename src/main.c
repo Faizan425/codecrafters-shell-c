@@ -28,6 +28,30 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	snprintf(candidate_path, candidate_path_size, "%s/%s", use_dir, command);
 	return candidate_path;
 }
+
+void handle_escaped_characters(const char *p, char buf[],int* position, size_t len){
+	if(!isdigit(*(p+1))) {
+		if(*position+1 < len){
+			buf[*position++]=*p;
+		}
+		p++;
+	}
+	else{
+	        int i=1;
+		while(isdigit(*(p+i))){
+		   i++;
+		}
+		int ascii_code=strtol((const char *)p,NULL,8);
+		buf[*position++]=(char)ascii_code;
+		int counter=1;
+		p++;
+		while(counter!=i){
+		counter++;
+		p++;
+		}
+	}
+	return;
+}
 int check_valid_command(char* command){
 	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0){
 		return 1;
@@ -226,11 +250,9 @@ int get_arguments(char *input, char **argv, int buf_size){
 					p++; //keep moving until end of double quotes
 					}
 					else{ //store the escaped charatcer
-						p++;
-						if(blen+1 <(int)sizeof(buf)){
-							buf[blen++]=*p;
-						}
-						p++;
+					      
+						
+						handle_escaped_characters(p,buf,&blen,4096);
 						continue;
 					}
 
