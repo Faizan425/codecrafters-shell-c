@@ -216,6 +216,19 @@ int get_arguments(char *input, char **argv, int buf_size){
 		char buf[4096];
 		int blen=0;
 		while(*p && !isspace((unsigned char)*p)){
+			if(*p=='\"'){
+				p++; //skip opening
+				while(*p && *p!='\"'){
+					if(blen+1 < (int)sizeof(buf)){
+						buf[blen++]=*p;
+					}
+					p++; //keep movin untile end of double quotes
+
+				}
+				if(*p && *p=='\"'){
+				p++; // skip closing
+				}
+			}
 			if(*p=='\''){ //quoted segment
 				p++;//skip opening
 				while(*p && *p!='\''){
