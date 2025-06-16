@@ -250,7 +250,7 @@ int get_arguments(char *input, char **argv, int buf_size){
 					      
 						p++;
 						int advance=handle_escaped_characters(p,buf,&blen,4096);
-						for(int i=0; i<=advance; i++){
+						for(int i=0; i<advance; i++){
 							p++;
 						}
 						continue;
@@ -291,7 +291,7 @@ int get_arguments(char *input, char **argv, int buf_size){
 				else{
 					p++;
 					int advance=handle_escaped_characters(p,buf,&blen,4096);
-					for(int i=0; i<=advance; i++){
+					for(int i=0; i<advance; i++){
 						p++;
 					}
 					continue;
