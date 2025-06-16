@@ -233,10 +233,16 @@ int get_arguments(char *input, char **argv, int buf_size){
 			else if(*p=='\''){ //quoted segment
 				p++;//skip opening
 				while(*p && *p!='\''){
+				if(*p!='\\'){
 				if(blen + 1<(int) sizeof(buf)){
 					buf[blen++]=*p;
 				}
 				p++;
+				}
+				else{
+					p++;
+					continue;
+				}
 				}
 				if(*p=='\''){
 					p++; //skip closing
@@ -244,10 +250,16 @@ int get_arguments(char *input, char **argv, int buf_size){
 				}
 			} else{
 				//unquoted character
+				if(*p && *p!='\\'){
 				if(blen +1 <(int)sizeof(buf)){
 					buf[blen++]= *p;
 				}
 				p++;
+				}
+				else{
+					p++;
+					continue;
+				}
 			}
 			// continue until whitespace or end
 
