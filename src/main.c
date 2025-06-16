@@ -29,28 +29,25 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	return candidate_path;
 }
 
-void handle_escaped_characters(const char *p, char buf[],int* position, size_t len){
-	if(!isdigit(*(p+1))) {
+int handle_escaped_characters(const char *p, char buf[],int* position, size_t len){
+	int i=1;
+	if(!isdigit(*p)) {
 		if(*position+1 < len){
-			buf[*position++]=*p;
+			buf[*position]=*p;
+			(*position)++;
 		}
-		p++;
+		
 	}
 	else{
-	        int i=1;
+	        i=0;
 		while(isdigit(*(p+i))){
 		   i++;
 		}
 		int ascii_code=strtol((const char *)p,NULL,8);
-		buf[*position++]=(char)ascii_code;
-		int counter=1;
-		p++;
-		while(counter!=i){
-		counter++;
-		p++;
-		}
+		buf[*position]=(char)ascii_code;
+	        (*position)++;	
 	}
-	return;
+	return i;
 }
 int check_valid_command(char* command){
 	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0){
@@ -251,8 +248,11 @@ int get_arguments(char *input, char **argv, int buf_size){
 					}
 					else{ //store the escaped charatcer
 					      
-						
-						handle_escaped_characters(p,buf,&blen,4096);
+						p++;
+						int advance=handle_escaped_characters(p,buf,&blen,4096);
+						for(int i=0; i<=advance; i++){
+							p++;
+						}
 						continue;
 					}
 
@@ -290,10 +290,10 @@ int get_arguments(char *input, char **argv, int buf_size){
 				}
 				else{
 					p++;
-					if(blen +1 < (int)sizeof(buf)){
-						buf[blen++]=*p;
+					int advance=handle_escaped_characters(p,buf,&blen,4096);
+					for(int i=0; i<=advance; i++){
+						p++;
 					}
-					p++;
 					continue;
 				}
 			}
