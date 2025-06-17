@@ -38,12 +38,11 @@ int handle_escaped_characters(const char *p, char buf[],int* position, size_t le
 		
 	}
 	else{
-		int digits=0;
-		while(isdigit(*(p+i)) && digits<3 && *(p+i)>='0' && *(p+i)<='7'){
+		
+		while(isdigit(*(p+i))  && *(p+i)>='0' && *(p+i)<='7'){
 		   i++;
-		   digits++;
 		}
-		int ascii_code=strtol((const char *)p,NULL,8);
+		int ascii_code=strtol(p,NULL,8);
 		if(*position <len-1){
 		buf[*position]=(char)ascii_code;
 	        (*position)++;	
@@ -250,12 +249,20 @@ int get_arguments(char *input, char **argv, int buf_size){
 					}
 					else{ //store the escaped charatcer
 					      
-						p++;// skip the escape character
+					/*	p++;// skip the escape character
 						int advance=handle_escaped_characters(p,buf,&blen,4096);
 						for(int i=0; i<advance; i++){
 							p++;
 						}
-						continue;
+						continue; */
+					if(*p && *p=='\\'){
+						p++;
+						if(blen+1 < (int)sizeof(buf)){
+							buf[blen++]=*p;
+						}
+						*p++;
+					}
+					continue;
 					}
 
 				}
@@ -290,11 +297,20 @@ int get_arguments(char *input, char **argv, int buf_size){
 				}
 				p++;
 				}
-				else{
+				else{ /*
 					p++;
 					int advance=handle_escaped_characters(p,buf,&blen,4096);
 					for(int i=0; i<advance; i++){
 						p++;
+					}
+					continue; */
+					if(*p && *p=='\\'){
+						p++;
+						if(blen +1 <(int)sizeof(buf)){
+							buf[blen++]=*p;
+						}
+						p++;
+						
 					}
 					continue;
 				}
