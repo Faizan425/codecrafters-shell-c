@@ -307,9 +307,7 @@ int get_arguments(char *input, char **argv, int buf_size){
 					}
 					continue; */
 					if(*p && *p=='\\'){
-						if(*(p+1) && (*(p+1)=='\"' || *(p+1)=='&' || *(p+1)=='`' ||*(p+1)=='\\')){
 							p++;
-						}
 						if(blen +1 <(int)sizeof(buf)){
 							buf[blen++]=*p;
 						}
