@@ -6,6 +6,9 @@
 #include <limits.h>
 #include<sys/types.h>
 #include<sys/wait.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<errno.h>
 # define MAX 100
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
@@ -27,6 +30,16 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	}
 	snprintf(candidate_path, candidate_path_size, "%s/%s", use_dir, command);
 	return candidate_path;
+}
+int get_file(const char *args,  const char *file_name){
+	int fd;
+	if(strcmp(args,">")==0 || strcmp(args,"1>")==0){
+		fd=open(file_name, O_WRONLY | O_CREAT | O_TRUNC ,0666);
+		if(fd==-1){
+		perror("open");
+		}
+		return fd;
+	}
 }
 int handle_escaped_characters(const char *p, char buf[],int* position, size_t len){
 	int i=1;
@@ -356,7 +369,42 @@ void  execute_custom(char input[]){
 			return;
 		}
 		if(pid==0){
+			 const char *args;
+			 int fd;
+			 int i=0;
+			 while(argument[i]!=NULL){
+				 args=argument[i];
+				 if(strcmp(args,"1>")==0 || strcmp(args,"2>")==0 || strcmp(args, "<")==0 || strcmp(args,">>")==0 || strcmp(args,"2>>")==0){
+					 args=argument[i];
+					 const char *file_name=argument[i+1];
+					fd=get_file(args,file_name);
+
+				       if(fd==-1){
+				       fprintf(stderr, "%s: file error\n",argument[0]);
+				       _exit(127);
+				       }	
+				 }
+				 i++;
+			 }
+			 if(fd>0){
+				 if(dup2(fd,STDOUT_FILENO)==-1){
+					 perror("dup2 stdout");
+					 close(fd);
+					 _exit(127);
+				 }
+			 }
+			 if(fd>0) close(fd);
+			 //remove the tokens at i and i+1
+			 int j=i;
+			 while(argument[j+2]!=NULL){
+				 argument[j]=argument[j+2];
+				 j++;
+			 }
+		        argument[j]=NULL;
+	                argument[j+1]=NULL; // just in case
+			i--; // in case if multiple redirections possible		
 			execvp(argument[0], argument);
+			
 			fprintf(stderr, "%s: command not found\n", argument[0]);
 			_exit(127);
 			return;
