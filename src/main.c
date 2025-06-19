@@ -41,7 +41,19 @@ int get_file(const char *args,  const char *file_name){
 	
 	}
 	else if(strcmp(args,"2>")==0){
-		fd=open(file_name,O_WRONLY | O_CREAT | O_APPEND, 0666);
+		fd=open(file_name,O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if(fd==-1){
+			perror("open");
+		}
+	}
+	else if(strcmp(args, ">>")==0){
+		fd=open(file_name, O_WRONLY | O_CREAT | O_APPEND,0666);
+		if(fd==-1){
+			perror("open");
+		}
+	}
+	else if(strcmp(args, "2>>")==0){
+		fd=open(file_name , O_WRONLY | O_CREAT | O_APPEND, 0666);
 		if(fd==-1){
 			perror("open");
 		}
@@ -169,30 +181,38 @@ void execute_echo(char input[]){
 		
 			
 		}
-		int saved=-1;
+		int saved_out=-1;
+		int saved_err=-1;
 		//final redirections applied once
-		saved=dup(STDOUT_FILENO);
-		if(saved<0){
-			perror("dup");
-			if(fd_out>=0)close(fd_out);
-			if(fd_err>=0)close(fd_err);
-			return;
-		}
 		if(fd_out>=0){
+			saved_out=dup(STDOUT_FILENO);
+			if(saved_out<0){
+				perror("dup");
+				close(fd_out);
+				close(saved_out);
+				return;
+			}
 		if(dup2(fd_out, STDOUT_FILENO)<0){
 			perror("dup2");
 			close(fd_out);
-			close(saved);
+			close(saved_out);
 			return;
 		}
 		close(fd_out);
 		
 		}
 		if(fd_err>=0){
-			if(dup2(fd_out, STDERR_FILENO)<0){
+			saved_err = dup(STDERR_FILENO);
+			if(saved_err<0){
+				perror("dup");
+				close(fd_err);
+				close(fd_out);
+				return;
+			}
+			if(dup2(fd_err, STDERR_FILENO)<0){
 				perror("dup2");
 				close(fd_err);
-				close(saved);
+				close(saved_err);
 				return;
 			}
 			close(fd_err);
@@ -202,16 +222,25 @@ void execute_echo(char input[]){
 			if(i>0) {putchar(' ');}
 			
 			fputs(argv[i], stdout);
-			fputs(argv[i], stderr);
 			
 		}
 		putchar('\n');
-		if(saved>=0){
-			if(dup2(saved, STDOUT_FILENO)<0){
+		if(saved_out>=0){
+			if(dup2(saved_out, STDOUT_FILENO)<0){
 				perror("dup2 restore");
+				close(saved_out);
 				return;
 			}
-			close(saved);
+			close(saved_out);
+		}
+		if(saved_err>=0){
+			if(dup2(saved_err, STDERR_FILENO)<0){
+				perror("dup2 restore");
+				close(saved_err);
+				return;
+			}
+			close(saved_err);
+			
 		}
 		
 		
