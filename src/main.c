@@ -107,9 +107,10 @@ void execute_echo(char input[]){
 	else{
 		int flag=0;
 		const char *tok;
-		int fd;
-		int newfd;
+		int fd=-1;
+		int newfd=-1;
 		const char *file_name=NULL;
+		
 		for(int i=0; argv[i]!=NULL; i++){
 			tok=argv[i];
 			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0 || strcmp(tok,"2>")==0|| strcmp(tok,"2>>")==0){
@@ -122,7 +123,7 @@ void execute_echo(char input[]){
 			newfd=get_file(tok,file_name);
 			if(newfd<0){
 				perror("file");
-				_exit(1);
+				return;
 			}
 			if(fd >=0) close(fd);
 			fd=newfd;
@@ -134,13 +135,33 @@ void execute_echo(char input[]){
 			argv[j]=NULL;
 			argv[j+1]=NULL;
 			i--;
+			argc=argc-2;  // adjust to get actual value of argc
 			}
-			if(fd>=0){
-				if(dup2(fd, STDOUT_FILENO)==-1){
-					perror("dup2 stdout");
-					close(fd);
-				}
+		
+			
+		}
+		int saved=-1;
+		if(fd>=0){
+			saved=dup(STDOUT_FILENO);
+			if(saved<0){
+				perror("dup");
+				close(fd);
+				return;
 			}
+		if(dup2(fd, STDOUT_FILENO)<0){
+			perror("dup2");
+			close(fd);
+			close(saved);
+			return;
+		}
+		close(fd);
+		if(saved>=0){
+			if(dup2(saved, STDOUT_FILENO)<0){
+				perror("dup2 restore");
+				return;
+			}
+			close (saved);
+		}
 		}
 		if(!flag){
 		for(int i=0; i<argc; i++){
