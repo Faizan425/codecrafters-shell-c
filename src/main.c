@@ -170,8 +170,9 @@ void execute_echo(char input[]){
 			fputs(argv[i], stdout);
 			
 		}
-		}
 		putchar('\n');
+		}
+		
 	}
 	free(arg_copy);
 }
