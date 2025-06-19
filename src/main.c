@@ -132,7 +132,7 @@ void execute_echo(char input[]){
 		
 		for(int i=0; argv[i]!=NULL; i++){
 			tok=argv[i];
-			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")){
+			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")==0){
 			if(argv[i+1]==NULL){
 				fprintf(stderr,"%s: syntax error: expected filename after %s\n", argv[0],tok);
 				return;
@@ -140,7 +140,7 @@ void execute_echo(char input[]){
 			file_name=argv[i+1];
 			newfd=get_file(tok,file_name);
 			if(newfd<0){
-				perror("file");
+				perror(file_name);
 				return;
 			}
 			if(fd_out >=0) close(fd_out);
@@ -163,7 +163,7 @@ void execute_echo(char input[]){
 			file_name=argv[i+1];
 			newfd=get_file(tok,file_name);
 			if(newfd<0){
-				perror("file");
+				perror(file_name);
 				return;
 			}
 			if(fd_err>=0) close(fd_err);
@@ -507,7 +507,7 @@ void  execute_custom(char input[]){
 			 int fd_err=-1;
 			 for(int i=0;argument[i]!=NULL; i++){
 				 args=argument[i];
-				 if(strcmp(args,"1>")==0 || strcmp(args,">>")==0 || strcmp(args,">")==0 || strcmp(args,">>")){
+				 if(strcmp(args,"1>")==0 || strcmp(args,">>")==0 || strcmp(args,">")==0 || strcmp(args,">>")==0){
 					 if(argument[i+1]==NULL){
 						 fprintf(stderr, "%s: syntax error: expected filename after %s\n", argument[0],args);
 						 _exit(1);
@@ -551,7 +551,6 @@ void  execute_custom(char input[]){
 				 argument[j]=NULL;
 				 argument[j+1]=NULL;
 				 i--;
-
 				 }	 
 			 }
 			 // final redirections
