@@ -375,7 +375,7 @@ void  execute_custom(char input[]){
 			 
 			 for(int i=0;argument[i]!=NULL; i++){
 				 args=argument[i];
-				 if(strcmp(args,"1>")==0 || strcmp(args,"2>")==0 || strcmp(args,">>")==0 || strcmp(args,"2>>")==0){
+				 if(strcmp(args,"1>")==0 || strcmp(args,"2>")==0 || strcmp(args,">>")==0 || strcmp(args,"2>>")==0 || strcmp(args,">")==0){
 					 if(argument[i+1]==NULL){
 						 fprintf(stderr, "%s: syntax error: expected filename after %s\n", argument[0],args);
 						 _exit(1);
