@@ -106,13 +106,14 @@ void execute_echo(char input[]){
 	}
 	else{
 		const char *tok;
-		int fd=-1;
+		int fd_out=-1;
 		int newfd=-1;
+		int fd_err=-1;
 		const char *file_name=NULL;
 		
 		for(int i=0; argv[i]!=NULL; i++){
 			tok=argv[i];
-			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0 || strcmp(tok,"2>")==0|| strcmp(tok,"2>>")==0){
+			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0){
 			if(argv[i+1]==NULL){
 				fprintf(stderr,"%s: syntax error: expected filename after %s\n", argv[0],tok);
 				return;
@@ -123,8 +124,8 @@ void execute_echo(char input[]){
 				perror("file");
 				return;
 			}
-			if(fd >=0) close(fd);
-			fd=newfd;
+			if(fd_out >=0) close(fd_out);
+			fd_out=newfd;
 			int j=i;
 			while(argv[j+2]!=NULL){
 				argv[j]=argv[j+2];
@@ -135,30 +136,66 @@ void execute_echo(char input[]){
 			i--;
 			argc=argc-2;  // adjust to get actual value of argc
 			}
+			else if(strcmp(tok,"2>")==0 || strcmp(tok,"2>>")==0){
+			if(argv[i+1]==NULL){
+				fprintf(stderr,"%s: syntax error: expected filename after %s\n", argv[0],tok);
+				return;
+			}
+			file_name=argv[i+1];
+			newfd=get_file(tok,file_name);
+			if(newfd<0){
+				perror("file");
+				return;
+			}
+			if(fd_err>=0) close(fd_err);
+			fd_err=newfd;
+			int j=i;
+			while(argv[j+2]!=NULL){
+				argv[j]=argv[j+2];
+				j++;
+			}
+			argv[j]=NULL;
+			argv[j+1]=NULL;
+			i--;
+			argc=argc-2;
+			}
 		
 			
 		}
 		int saved=-1;
-		if(fd>=0){
-			saved=dup(STDOUT_FILENO);
-			if(saved<0){
-				perror("dup");
-				close(fd);
-				return;
-			}
-		if(dup2(fd, STDOUT_FILENO)<0){
+		//final redirections applied once
+		saved=dup(STDOUT_FILENO);
+		if(saved<0){
+			perror("dup");
+			if(fd_out>=0)close(fd_out);
+			if(fd_err>=0)close(fd_err);
+			return;
+		}
+		if(fd_out>=0){
+		if(dup2(fd_out, STDOUT_FILENO)<0){
 			perror("dup2");
-			close(fd);
+			close(fd_out);
 			close(saved);
 			return;
 		}
-		close(fd);
+		close(fd_out);
 		
 		}
+		if(fd_err>=0){
+			if(dup2(fd_out, STDERR_FILENO)<0){
+				perror("dup2");
+				close(fd_err);
+				close(saved);
+				return;
+			}
+			close(fd_err);
+		}
+
 		for(int i=0; i<argc; i++){
 			if(i>0) {putchar(' ');}
 			
 			fputs(argv[i], stdout);
+			fputs(argv[i], stderr);
 			
 		}
 		putchar('\n');
@@ -429,12 +466,12 @@ void  execute_custom(char input[]){
 		}
 		if(pid==0){
 			 const char *args;
-			 int fd=-1;
+			 int fd_out=-1;
 			 int newfd=-1;
-			 
+			 int fd_err=-1;
 			 for(int i=0;argument[i]!=NULL; i++){
 				 args=argument[i];
-				 if(strcmp(args,"1>")==0 || strcmp(args,"2>")==0 || strcmp(args,">>")==0 || strcmp(args,"2>>")==0 || strcmp(args,">")==0){
+				 if(strcmp(args,"1>")==0 || strcmp(args,">>")==0 || strcmp(args,">")==0){
 					 if(argument[i+1]==NULL){
 						 fprintf(stderr, "%s: syntax error: expected filename after %s\n", argument[0],args);
 						 _exit(1);
@@ -446,8 +483,8 @@ void  execute_custom(char input[]){
 				       perror("file");
 				       _exit(1);
 				       }
-			       if(fd>=0) close(fd); // close previously open  file descriptor, only the last one wins
-		               fd=newfd;
+			       if(fd_out>=0) close(fd_out); // close previously open  file descriptor, only the last one wins
+		               fd_out=newfd;
 		                int j=i; //remove the tokens at index i and i+1
 		 while(argument[j+2]!=NULL){
 			 argument[j]=argument[j+2];
@@ -456,16 +493,48 @@ void  execute_custom(char input[]){
                   argument[j]=NULL;
                   argument[j+1]=NULL;//just in case
                   i--; //recheck this index		  
+				 }
+				 else if(strcmp(args,"2>")==0 || strcmp(args,"2>>")==0){
+				 if(argument[i+1]==NULL){
+					 fprintf(stderr,"%s: syntax error: expected filename after %s\n", argument[0], args);
+					 _exit(1);
+				 }
+				 const char *file_name=argument[i+1];
+				 newfd=get_file(args,file_name);
+				 if(newfd<0){
+					 perror("file");
+					 _exit(1);
+				 }
+				 if(fd_err>=0) close (fd_err);
+				 fd_err=newfd;
+				 int j=i;
+				 while(argument[j+2]!=NULL){
+				 argument[j]=argument[j+2];
+				 j++;
+				 }
+				 argument[j]=NULL;
+				 argument[j+1]=NULL;
+				 i--;
+
 				 }	 
 			 }
-			 if(fd>=0){
-				 if(dup2(fd,STDOUT_FILENO)==-1){
+			 if(fd_out >=0){
+				 if(dup2(fd_out, STDOUT_FILENO)<0){
 					 perror("dup2 stdout");
-					 close(fd);
-					 _exit(127);
+					 close(fd_out);
+					 _exit(1);
 				 }
-				 close(fd);
+				 close(fd_out);
 			 }
+			 if(fd_err >=0){
+				 if(dup2(fd_err, STDERR_FILENO)<0){
+					 perror("dup2 stderr");
+					 close(fd_err);
+					 _exit(1);
+				 }
+				 close(fd_err);
+			 }
+			 
 			execvp(argument[0], argument);
 			fprintf(stderr, "%s: command not found\n", argument[0]);
 			_exit(127);
