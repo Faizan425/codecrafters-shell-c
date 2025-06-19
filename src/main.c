@@ -370,39 +370,47 @@ void  execute_custom(char input[]){
 		}
 		if(pid==0){
 			 const char *args;
-			 int fd;
-			 int i=0;
-			 while(argument[i]!=NULL){
+			 int fd=-1;
+			 int newfd;
+			 
+			 for(int i=0;argument[i]!=NULL; i++){
 				 args=argument[i];
-				 if(strcmp(args,"1>")==0 || strcmp(args,"2>")==0 || strcmp(args, "<")==0 || strcmp(args,">>")==0 || strcmp(args,"2>>")==0){
-					 args=argument[i];
+				 if(strcmp(args,"1>")==0 || strcmp(args,"2>")==0 || strcmp(args,">>")==0 || strcmp(args,"2>>")==0){
+					 if(argument[i+1]==NULL){
+						 fprintf(stderr, "%s: syntax error: expected filename after %s\n", argument[0],args);
+						 _exit(1);
+					 }
 					 const char *file_name=argument[i+1];
-					fd=get_file(args,file_name);
+					 newfd=get_file(args,file_name);
 
-				       if(fd==-1){
-				       fprintf(stderr, "%s: file error\n",argument[0]);
-				       _exit(127);
-				       }	
+				       if(newfd<=0){
+				       perror("file");
+				       _exit(1);
+				       }
+			       if(fd>=0) close(fd); // close previously open  file descriptor, only the last one wins
+		               fd=newfd;
+		                int j=i; //remove the tokens at index i and i+1
+		 while(argument[j+2]!=NULL){
+			 argument[j]=argument[j+2];
+			 j++;
+		 }
+                  argument[j]=NULL;
+                  argument[j+1]=NULL;//just in case
+                  i--; //recheck this index		  
 				 }
-				 i++;
+				 
+				 
 			 }
-			 if(fd>0){
+			 if(fd>=0){
 				 if(dup2(fd,STDOUT_FILENO)==-1){
 					 perror("dup2 stdout");
 					 close(fd);
 					 _exit(127);
 				 }
+				 close(fd);
 			 }
-			 if(fd>0) close(fd);
-			 //remove the tokens at i and i+1
-			 int j=i;
-			 while(argument[j+2]!=NULL){
-				 argument[j]=argument[j+2];
-				 j++;
-			 }
-		        argument[j]=NULL;
-	                argument[j+1]=NULL; // just in case
-			i--; // in case if multiple redirections possible		
+			
+			 		
 			execvp(argument[0], argument);
 			
 			fprintf(stderr, "%s: command not found\n", argument[0]);
