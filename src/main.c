@@ -105,7 +105,6 @@ void execute_echo(char input[]){
 		printf("\n");
 	}
 	else{
-		int flag=0;
 		const char *tok;
 		int fd=-1;
 		int newfd=-1;
@@ -114,7 +113,6 @@ void execute_echo(char input[]){
 		for(int i=0; argv[i]!=NULL; i++){
 			tok=argv[i];
 			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0 || strcmp(tok,"2>")==0|| strcmp(tok,"2>>")==0){
-			flag=1;
 			if(argv[i+1]==NULL){
 				fprintf(stderr,"%s: syntax error: expected filename after %s\n", argv[0],tok);
 				return;
@@ -155,15 +153,8 @@ void execute_echo(char input[]){
 			return;
 		}
 		close(fd);
-		if(saved>=0){
-			if(dup2(saved, STDOUT_FILENO)<0){
-				perror("dup2 restore");
-				return;
-			}
-			close (saved);
+		
 		}
-		}
-		if(!flag){
 		for(int i=0; i<argc; i++){
 			if(i>0) {putchar(' ');}
 			
@@ -171,7 +162,14 @@ void execute_echo(char input[]){
 			
 		}
 		putchar('\n');
+		if(saved>=0){
+			if(dup2(saved, STDOUT_FILENO)<0){
+				perror("dup2 restore");
+				return;
+			}
+			close(saved);
 		}
+		
 		
 	}
 	free(arg_copy);
