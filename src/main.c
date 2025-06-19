@@ -32,14 +32,21 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	return candidate_path;
 }
 int get_file(const char *args,  const char *file_name){
-	int fd;
+	int fd=-1;
 	if(strcmp(args,">")==0 || strcmp(args,"1>")==0){
 		fd=open(file_name, O_WRONLY | O_CREAT | O_TRUNC ,0666);
 		if(fd==-1){
 		perror("open");
 		}
-		return fd;
+	
 	}
+	else if(strcmp(args,"2>")==0){
+		fd=open(file_name,O_WRONLY | O_CREAT | O_APPEND, 0666);
+		if(fd==-1){
+			perror("open");
+		}
+	}
+	return fd;
 }
 int handle_escaped_characters(const char *p, char buf[],int* position, size_t len){
 	int i=1;
@@ -518,6 +525,7 @@ void  execute_custom(char input[]){
 
 				 }	 
 			 }
+			 // final redirections
 			 if(fd_out >=0){
 				 if(dup2(fd_out, STDOUT_FILENO)<0){
 					 perror("dup2 stdout");
