@@ -105,11 +105,50 @@ void execute_echo(char input[]){
 		printf("\n");
 	}
 	else{
+		int flag=0;
+		const char *tok;
+		int fd;
+		int newfd;
+		const char *file_name=NULL;
+		for(int i=0; argv[i]!=NULL; i++){
+			tok=argv[i];
+			if(strcmp(tok,">")==0 || strcmp(tok,"1>")==0 || strcmp(tok,">>")==0 || strcmp(tok,"2>")==0|| strcmp(tok,"2>>")==0){
+			flag=1;
+			if(argv[i+1]==NULL){
+				fprintf(stderr,"%s: syntax error: expected filename after %s\n", argv[0],tok);
+				return;
+			}
+			file_name=argv[i+1];
+			newfd=get_file(tok,file_name);
+			if(newfd<0){
+				perror("file");
+				_exit(1);
+			}
+			if(fd >=0) close(fd);
+			fd=newfd;
+			int j=i;
+			while(argv[j+2]!=NULL){
+				argv[j]=argv[j+2];
+				j++;
+			}
+			argv[j]=NULL;
+			argv[j+1]=NULL;
+			i--;
+			}
+			if(fd>=0){
+				if(dup2(fd, STDOUT_FILENO)==-1){
+					perror("dup2 stdout");
+					close(fd);
+				}
+			}
+		}
+		if(!flag){
 		for(int i=0; i<argc; i++){
 			if(i>0) {putchar(' ');}
 			
 			fputs(argv[i], stdout);
 			
+		}
 		}
 		putchar('\n');
 	}
@@ -371,7 +410,7 @@ void  execute_custom(char input[]){
 		if(pid==0){
 			 const char *args;
 			 int fd=-1;
-			 int newfd;
+			 int newfd=-1;
 			 
 			 for(int i=0;argument[i]!=NULL; i++){
 				 args=argument[i];
@@ -383,7 +422,7 @@ void  execute_custom(char input[]){
 					 const char *file_name=argument[i+1];
 					 newfd=get_file(args,file_name);
 
-				       if(newfd<=0){
+				       if(newfd<0){
 				       perror("file");
 				       _exit(1);
 				       }
@@ -397,9 +436,7 @@ void  execute_custom(char input[]){
                   argument[j]=NULL;
                   argument[j+1]=NULL;//just in case
                   i--; //recheck this index		  
-				 }
-				 
-				 
+				 }	 
 			 }
 			 if(fd>=0){
 				 if(dup2(fd,STDOUT_FILENO)==-1){
@@ -409,10 +446,7 @@ void  execute_custom(char input[]){
 				 }
 				 close(fd);
 			 }
-			
-			 		
 			execvp(argument[0], argument);
-			
 			fprintf(stderr, "%s: command not found\n", argument[0]);
 			_exit(127);
 			return;
