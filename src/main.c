@@ -116,29 +116,32 @@ void execute_pwd(char input []){
 }
 
 void execute_cd(char input []){
-	char *path=remove_command_and_get_string(input);
-	char *path_copy=strdup(path ? path : "");
-	if(!path_copy){
+#define MAX_ARGS 100
+	char *argstr=remove_command_and_get_string(input);
+	char *argstr_copy=strdup(argstr ? argstr : " ");
+	if(!argstr_copy){
 		perror("strdup");
 		return;
 	}
-	int argc=get_arguments(input, &path, PATH_MAX);
+	char *buf[MAX_ARGS];
+	int argc=get_arguments(argstr_copy, buf, MAX_ARGS);
 	if(argc==0){
-		free(path_copy);
+		free(argstr_copy);
 		return;
 	}
 	else if(argc>1){
-		free(path_copy);
-		fprintf(stderr,"%s\n: Syntax error","cd");
+		free(argstr_copy);
+		fprintf(stderr,"%s: Too many arguments. \n","cd");
 		return;
 	}
-	else {
-		if(chdir(path_copy)!=0){
-			fprintf(stderr, "cd : %s: no such file or directory\n",path_copy);
-			free(path_copy);
-			return;
-		}
+	const char *path=buf[0];
+	if(chdir(path)!=0){
+		fprintf(stderr, "cd: %s: %s\n",path,strerror(errno));
+		free(argstr_copy);
+		return;
 	}
+	free(argstr_copy);
+	
 }
 void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
