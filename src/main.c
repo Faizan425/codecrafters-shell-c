@@ -114,6 +114,107 @@ void execute_pwd(char input []){
 	printf("%s\n",cwd);
 	free(cwd);
 }
+const char *get_final_path(const char *rel_path){
+	//1. Get current working directory
+	char *cwd=getcwd(NULL,0);
+	if(cwd == NULL){
+		perror("getcwd");
+		return NULL;
+	}
+	//2. Prepare components array (max number of segments)
+	//Decide a maximum number of components; PATH_MAX is the upper bound on length
+	char *copy=strdup(cwd);
+	if(!copy){
+		perror("strdup");
+		free(cwd);
+		return NULL;
+	}
+	char *components[PATH_MAX];
+	int comp_count = 0;
+	
+	char *saveptr = NULL;
+	char *tok=strtok_r(copy,"/", &saveptr);
+	while(tok){
+		// skip empty tokens , strtok won't deliver empty tokens for consecutive slashes
+		components[comp_count++]=strdup(tok);
+		if(!components[comp_count-1]){
+			perror("strdup");
+			free(copy);
+			for(int i=0; i<comp_count-1; i++) free(components[i]);
+			free(cwd);
+			return NULL;
+		}
+		tok= strtok_r(NULL, "/",&saveptr);
+	}
+	free(copy);
+
+	free(cwd);
+	char *rp_copy=strdup(rel_path);
+	if(!rp_copy){
+		perror("strdup");
+		for(int i=0; i<comp_count; i++) free(components[i]);
+		return NULL;
+	}
+	char *saveptr2 = NULL;
+	char *seg= strtok_r(rp_copy, "/", &saveptr2);
+	while(seg){
+		if(strcmp(seg,"")==0 || strcmp(seg,".")==0){
+			
+		}
+		else if(strcmp(seg, "..")==0){
+			if(comp_count>0){
+				free(components[--comp_count]);
+			}
+		}
+		else{
+			components[comp_count++]=strdup(seg);
+			if(!components[comp_count-1]){
+				free(rp_copy);
+				for(int i=0; i<comp_count-1; i++) free(components[i]);
+				return NULL;
+			}
+		}
+		seg=strtok_r(NULL, "/", &saveptr2);
+	}
+	free(rp_copy);
+
+	// 5. Reconstruct newpath
+	char newpath[PATH_MAX];
+	if(comp_count==0){
+		strcpy(newpath,"/");
+	}
+	else{
+		newpath[0]='\0';
+		for(int i=0; i< comp_count; i++){
+			// check length concatenation
+			size_t needed  = strlen(newpath+1+strlen(components[i])+1);
+			if(needed > PATH_MAX){
+				fprintf(stderr, "cd: path too long\n");
+				for(int j=0; j<comp_count; j++) free(components[j]);
+				return NULL;
+			}
+			strcat(newpath, "/");
+			strcat(newpath, components[i]);
+		}
+	}
+	//6. validate existence
+	struct stat st;
+	if(stat(newpath, &st)!=0){
+		fprintf(stderr,"cd: %s: %s\n", newpath, strerror(errno));
+		for(int i=0; i<comp_count; i++) free(components[i]);
+		return NULL;
+	}
+	if(!S_ISDIR(st.st_mode)){
+		fprintf(stderr,"cd: %s: Not a directory\n", newpath);
+		for(int i=0; i<comp_count; i++)free(components[i]);
+		return NULL;
+	}
+
+	// 7. cleanup component strings
+	for(int i=0; i< comp_count; i++) free(components[i]);
+	//8. return a malloc'd copy of newpath
+	return strdup(newpath);
+}
 
 void execute_cd(char input []){
 #define MAX_ARGS 100
@@ -135,11 +236,15 @@ void execute_cd(char input []){
 		return;
 	}
 	const char *path=buf[0];
+	if(path[0]!='/'){
+		path=get_final_path(path);
+	}
 	if(chdir(path)!=0){
 		fprintf(stderr, "cd: %s: %s\n",path,strerror(errno));
 		free(argstr_copy);
 		return;
 	}
+	
 	free(argstr_copy);
 	
 }
