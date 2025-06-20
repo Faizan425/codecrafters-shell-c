@@ -83,7 +83,7 @@ int handle_escaped_characters(const char *p, char buf[],int* position, size_t le
 	return i;
 }
 int check_valid_command(char* command){
-	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0 || strcmp(command,"pwd")==0){
+	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0 || strcmp(command,"pwd")==0 ||strcmp(command, "cd")==0 ){
 		return 1;
 	}
 	else {
@@ -115,6 +115,31 @@ void execute_pwd(char input []){
 	free(cwd);
 }
 
+void execute_cd(char input []){
+	char *path=remove_command_and_get_string(input);
+	char *path_copy=strdup(path ? path : "");
+	if(!path_copy){
+		perror("strdup");
+		return;
+	}
+	int argc=get_arguments(input, &path, PATH_MAX);
+	if(argc==0){
+		free(path_copy);
+		return;
+	}
+	else if(argc>1){
+		free(path_copy);
+		fprintf(stderr,"%s\n: Syntax error","cd");
+		return;
+	}
+	else {
+		if(chdir(path_copy)!=0){
+			fprintf(stderr, "cd : %s: no such file or directory\n",path_copy);
+			free(path_copy);
+			return;
+		}
+	}
+}
 void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
 	if(arg[0]=='\0'){
@@ -624,6 +649,9 @@ int retrieve_command(char input[], char* command, size_t cmd_buf_size){
 void execute_command(char *command,char input[]){
 	if(strcmp(command,"echo")==0){
 		execute_echo(input);
+	}
+	else if(strcmp(command, "cd")==0){
+		execute_cd(input);
 	}
 	else if(strcmp(command, "type")==0){
 		execute_type(input);
