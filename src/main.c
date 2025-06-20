@@ -83,7 +83,7 @@ int handle_escaped_characters(const char *p, char buf[],int* position, size_t le
 	return i;
 }
 int check_valid_command(char* command){
-	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0){
+	if(strcmp(command,"echo")==0 || strcmp(command, "type")==0  || strcmp(command,"exit")==0 || strcmp(command,"pwd")==0){
 		return 1;
 	}
 	else {
