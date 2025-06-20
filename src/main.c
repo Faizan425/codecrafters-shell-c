@@ -105,7 +105,15 @@ int check_echo(char  str[]){
 		return 1;
 	return 0;
 }
-
+void execute_pwd(char input []){
+	char *cwd=getcwd(NULL,0);
+	if(cwd==NULL){
+		perror("pwd");
+		return;
+	}
+	printf("%s\n",cwd);
+	free(cwd);
+}
 
 void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
@@ -619,6 +627,9 @@ void execute_command(char *command,char input[]){
 	}
 	else if(strcmp(command, "type")==0){
 		execute_type(input);
+	}
+	else if(strcmp(command, "pwd")==0){
+		execute_pwd(input);
 	}
 	else{
 		execute_custom(input);
