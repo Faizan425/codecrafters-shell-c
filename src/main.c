@@ -226,7 +226,19 @@ void execute_cd(char input []){
 	}
 	char *buf[MAX_ARGS];
 	int argc=get_arguments(argstr_copy, buf, MAX_ARGS);
-	if(argc==0){
+	
+	if(argc==0 || strcmp(argstr_copy,"~")==0){
+		const char *home=getenv("HOME");
+		if(!home || home[0]=='\0'){
+			fprintf(stderr,"cd: %s: %s\n",home,strerror(errno));
+			free(argstr_copy);
+			return;
+		}
+		if(chdir(home)!=0){
+			fprintf(stderr, "cd: %s: %s\n",home, strerror(errno));
+			free(argstr_copy);
+			return;
+		}
 		free(argstr_copy);
 		return;
 	}
