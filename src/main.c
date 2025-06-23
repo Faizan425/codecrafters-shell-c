@@ -499,7 +499,7 @@ int execute_echo(char input[]){
 	const char *tok;
 	for(int i=0; argv[i]!=NULL; i++){
 		tok=argv[i];
-		if(strcmp(tok,">")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")==0 || strcmp(tok,"1>")){
+		if(strcmp(tok,">")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")==0 || strcmp(tok,"1>")==0){
 			if(argv[i+1]==NULL){
 				fprintf(stderr,"%s: syntax error: expected filename after %s\n",argv[0],tok);
 				return 1;
@@ -507,7 +507,7 @@ int execute_echo(char input[]){
 			file_name=argv[i+1];
 			newfd=get_file(tok,file_name);
 			if(newfd<0){
-				perror(file_name);
+				fprintf(stderr,"file:%s open error\n",file_name);
 				return 1;
 			}
 			if(fd_out >=0) close(fd_out);
@@ -529,7 +529,7 @@ int execute_echo(char input[]){
 			file_name=argv[i+1];
 			newfd=get_file(tok,file_name);
 			if(newfd<0){
-				perror(file_name);
+				fprintf(stderr, "file:%s open error\n",file_name);
 				return 1;
 			}
 			if(fd_err>=0) close(fd_err);
