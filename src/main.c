@@ -1157,7 +1157,7 @@ int execute_command(char *command, char input[]){
 			if(argc==0) _exit(0);
 			if(handle_redirections(argv)<0) _exit(1);
 			execvp(argv[0], argv);
-			perror(argv[0]);
+			fprintf(stderr,"%s: command not found\n",argv[0]);
 			free(inputs_copy);
 			_exit(127);
 		}
@@ -1173,7 +1173,7 @@ int execute_command(char *command, char input[]){
 			if(argc==0) _exit(0);
 			if(handle_redirections(argv)<0) _exit(1);
 			execvp(argv[0],argv);
-			perror(argv[0]);
+			fprintf(stderr,"%s: command not found\n",argv[0]);
 			free(inputs_copy);
 			_exit(127);
 			}
