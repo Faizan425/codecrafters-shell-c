@@ -11,7 +11,6 @@
 #include<sys/stat.h>
 #include<errno.h>
 # define MAX 100
-static bool in_pipeline_child=false;
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
 char* build_path(const char *path_token, const char *command,char* candidate_path, size_t candidate_path_size){
@@ -107,15 +106,14 @@ int check_echo(char  str[]){
 		return 1;
 	return 0;
 }
-int execute_pwd(char input []){
+void execute_pwd(char input []){
 	char *cwd=getcwd(NULL,0);
 	if(cwd==NULL){
 		perror("pwd");
-		return 1;
+		return;
 	}
 	printf("%s\n",cwd);
 	free(cwd);
-	return 0;
 }
 
 int handle_redirections(char *argv[]){
@@ -420,205 +418,60 @@ void execute_stage(char input[]){
 	free(input_copy);
 }
 */
-int execute_cd(char input []){
+void execute_cd(char input []){
 #define MAX_ARGS 100
 	char *argstr=remove_command_and_get_string(input);
 	char *argstr_copy=strdup(argstr ? argstr : " ");
 	if(!argstr_copy){
 		perror("strdup");
-		return 1;
+		return;
 	}
 	char *buf[MAX_ARGS];
 	int argc=get_arguments(argstr_copy, buf, MAX_ARGS);
-	int status=0;
+	
 	if(argc==0 || strcmp(argstr_copy,"~")==0){
 		const char *home=getenv("HOME");
 		if(!home || home[0]=='\0'){
 			fprintf(stderr,"cd: %s: %s\n",home,strerror(errno));
 			free(argstr_copy);
-			status = 1;
+			return;
 		}
 		if(chdir(home)!=0){
 			fprintf(stderr, "cd: %s: %s\n",home, strerror(errno));
 			free(argstr_copy);
-			status=1;
+			return;
 		}
-		//free(argstr_copy);
+		free(argstr_copy);
+		return;
 	}
 	else if(argc>1){
-		//free(argstr_copy);
+		free(argstr_copy);
 		fprintf(stderr,"%s: Too many arguments. \n","cd");
-		status=1;
+		return;
 	}
-	else {
-	const char *path0=buf[0];
-	const char *path=path0;
+	const char *path=buf[0];
 	if(path[0]!='/'){
-		char *resolved=(char*)get_final_path(path);
-		if(!resolved){
-			status=1;
-		}
-		else {
-			path=resolved;
-		}
-	}if(status==0){
+		path=get_final_path(path);
+	}
 	if(chdir(path)!=0){
 		fprintf(stderr, "cd: %s: %s\n",path,strerror(errno));
-		//free(argstr_copy);
-		status = 1;
+		free(argstr_copy);
+		return;
 	}
-	}
-	if(path0[0]!='/') free((void*)path);
-}
 	
 	free(argstr_copy);
-	return status;
 	
 }
-int execute_echo(char input[]){
-#define MAX 100
-	char *arg=remove_command_and_get_string(input);
-	if(arg[0]=='\0'){
-		printf("\n");
-		return 0;
-	}
-	char *arg_copy=strdup(arg);
-	if(!arg_copy){
-		perror("strdup");
-		return 1;
-	}
-	char *argv[MAX];
-	int argc=get_arguments(arg_copy,argv,MAX);
-	if(argc==0){
-		printf("\n");
-		return 0;
-	}
-	int fd_out=-1, fd_err=-1;
-	int newfd=-1;
-	const char *file_name=NULL;
-	const char *tok;
-	for(int i=0; argv[i]!=NULL; i++){
-		tok=argv[i];
-		if(strcmp(tok,">")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")==0){
-			if(argv[i+1]==NULL){
-				fprintf(stderr,"%s: syntax error: expected filename after %s\n",argv[0],tok);
-				return 1;
-			}
-			file_name=argv[i+1];
-			newfd=get_file(tok,file_name);
-			if(newfd<0){
-				perror(file_name);
-				return 1;
-			}
-			if(fd_out >=0) close(fd_out);
-			fd_out=newfd;
-			int j=i;
-			while(argv[j+2]!=NULL){
-				argv[j]=argv[j+2];
-				j++;
-			}
-			argv[j]=NULL;
-			argv[j+1]=NULL;
-			i--;
-			argc-=2;
-		}
-		else if(strcmp(tok,"2>")==0 || strcmp(tok,"2>>")==0){
-			if(argv[i+1]==NULL){
-				return 1;
-			}
-			file_name=argv[i+1];
-			newfd=get_file(tok,file_name);
-			if(newfd<0){
-				perror(file_name);
-				return 1;
-			}
-			if(fd_err>=0) close(fd_err);
-			fd_err=newfd;
-			int j=i;
-			while(argv[j+2]!=NULL){
-				argv[j]=argv[j+2];
-				j++;
-			}
-			argv[j]=NULL;
-			argv[j+1]=NULL;
-			i--;
-			argc-=2;
-		}
-		
-	}
-	int saved_out=-1;
-	int saved_err=-1;
-	// final redirection
-	if(fd_out>=0){
-		saved_out=dup(STDOUT_FILENO);
-		if(saved_out<0){
-			perror("dup");
-			close(fd_out);
-			close(saved_out);
-			return 1;
-		}
-		if(dup2(fd_out,STDOUT_FILENO)<0){
-			perror("dup2");
-			close(fd_out);
-			close(saved_out);
-			return 1;
-		}
-		close(fd_out);
-	}
-	if(fd_err>=0){
-		saved_err= dup(STDERR_FILENO);
-		if(saved_err<0){
-			perror("dup");
-			close(fd_err);
-			close(fd_out);
-			return 1;
-		}
-		if(dup2(fd_err, STDERR_FILENO)<0){
-			perror("dup2");
-			close(fd_err);
-			close(saved_err);
-			return 1;
-		}
-		close(fd_err);
-	}
-		// print the arguments
-		for(int i=0; i <argc; i++){
-			if(i>0) putchar(' ');
-			fputs(argv[i],stdout);
-		}
-		putchar('\n');
-		if(saved_out>=0){
-			if(dup2(saved_out,STDOUT_FILENO)<0){
-				perror("dup2 restore");
-				close(saved_out);
-				return 1;
-			}
-			close(saved_out);
-		}
-		if(saved_err>=0){
-			if(dup2(saved_err, STDERR_FILENO)<0){
-				perror("dup2 restore");
-				close(saved_err);
-				return 1;
-			}
-			close(saved_err);
-		}
-		
-	
-	free(arg_copy);
-	return 0;
-}
-/*
-int execute_echo(char input[]){
+void execute_echo(char input[]){
 	char *arg = remove_command_and_get_string(input);
 	if(arg[0]=='\0'){
 		printf("\n");
-		return 0;
+		return;
 	}
 	char *arg_copy = strdup(arg);
 	if(!arg_copy){
 		perror("strdup");
-		return 1;
+		return;
 	}
 	char *argv[MAX];
 	int argc=get_arguments(arg_copy, argv,MAX);
@@ -749,8 +602,7 @@ int execute_echo(char input[]){
 	}
 	free(arg_copy);
 }
-*/
-int execute_type_deprecated(char input[]){
+void execute_type_deprecated(char input[]){
 	char *arg = remove_command_and_get_string(input);
 	if(arg[0]=='\0'){
 		printf("type : usage : type NAME\n");
@@ -763,29 +615,25 @@ int execute_type_deprecated(char input[]){
 		printf("%s: not found\n",arg);
 	}
 	}
-	return 0;
 }
 
-int execute_type(char input []){
-	int status=0;
+void execute_type(char input []){
+	
 	char *arg=remove_command_and_get_string(input);
 	if(check_valid_command(arg)){
-		if(execute_type_deprecated(input)==0){
-		return 0;
-		}
+		execute_type_deprecated(input);
+		return;
 	}
 	int flag=0; //flag to indicate if we found the command or not.
 	
 	if(strchr(arg,'/')!=NULL){
 		if(access(arg,X_OK)==0){
 			printf("%s\n", arg);
-			status=0;
 		}
 		else{
 			printf("%s: not found\n",arg);
-			status=1;
 		}
-		return status;
+		return;
 		
 	}
 else{
@@ -794,20 +642,17 @@ char *path_env= getenv("PATH");
 if(path_env== NULL||path_env[0]=='\0'){
 if(build_path("", arg, candidate_path, sizeof(candidate_path)) !=NULL && access(candidate_path, X_OK)==0){
 	printf("%s is %s\n",arg, candidate_path);
-	status= 0;
 }
 else{
 	printf("%s: not found\n",arg);
-	status= 1;
 }
-return status;
+return;
 }
 
 char  *path_copy= strdup(path_env);
 if(!path_copy){
 	perror("strdup");
-	//exit(1);
-	_exit(1);
+	exit(1);
 }
 char *p=path_copy;
 
@@ -824,14 +669,12 @@ while((pointer_to_path_token = strsep(&p, ":")) !=NULL){
 free(path_copy);
 if(flag){
 	printf("%s is %s\n",arg,candidate_path);
-	status=0;
 }
 else{
 	printf("%s: not found\n",arg);
-	status=1;
 }
 }
-return status;
+
 }
 
 /*int get_arguments(char* inputs_copy, char** argument,int max_args){
@@ -995,7 +838,6 @@ int get_arguments(char *input, char **argv, int buf_size){
 	argv[argc]= NULL;
 	return argc;
 }
-/*
 void  execute_custom(char input[]){
 	char *argument[100];
 	char *inputs_copy=strdup(input);
@@ -1104,7 +946,7 @@ void  execute_custom(char input[]){
 		} 
 			
 }
-*/
+
 char* remove_command_and_get_string(char input[] ){
 	int i=skip_leading_spaces(input);
 	while(input[i] != '\0' && !isspace((unsigned char)input[i])){ //moving through the command
@@ -1129,68 +971,17 @@ int retrieve_command(char input[], char* command, size_t cmd_buf_size){
 	command[len] = '\0';
 	return 1;
 }
-
-int execute_command(char *command, char input[]){
+void execute_c(char *input){
+#define MAX 100
 	char *argv[MAX];
-	char *inputs_copy=strdup(input);
-	if(!inputs_copy){
-		perror("strdup");
-		return 1;
-	}
-	int argc=get_arguments(inputs_copy,argv,MAX);
-	if(strcmp(command,"echo")==0){
-		return execute_echo(input);
-	}
-	else if(strcmp(command,"cd")==0){
-		return execute_cd(input);
-	}
-	else if(strcmp(command,"pwd")==0){
-		if(handle_redirections(argv)<0) _exit(1);
-		return execute_pwd(input);
-	}
-	else if(strcmp(command,"type")==0){
-		if(handle_redirections(argv)<0) _exit(1);
-		return execute_type(input);
-	}
-	else {
-		if(in_pipeline_child){
-			if(argc==0) _exit(0);
-			if(handle_redirections(argv)<0) _exit(1);
-			execvp(argv[0], argv);
-			perror(argv[0]);
-			free(inputs_copy);
-			_exit(127);
-		}
-		else{
-			pid_t pid=fork();
-			if(pid<0){
-				perror("fork");
-				free(inputs_copy);
-				return 1;
-			}
-			if(pid==0){
-			argc=get_arguments(inputs_copy,argv,MAX);
-			if(argc==0) _exit(0);
-			if(handle_redirections(argv)<0) _exit(1);
-			execvp(argv[0],argv);
-			perror(argv[0]);
-			free(inputs_copy);
-			_exit(127);
-			}
-			else{
-				int wstatus;
-				if(waitpid(pid, &wstatus, 0)<0){
-					perror("waitpid");
-					return 1;
-				}
-				free(inputs_copy);
-				if(WIFEXITED(wstatus)) return WEXITSTATUS(wstatus);
-				else return 1;
-			}
-		}
-	}
+	int argc=get_arguments(input,argv,MAX);
+	if(argc==0) return;
+	if(handle_redirections(argv)<0) return;
+	execvp(argv[0],argv);
+	perror(argv[0]);
+	_exit(127);
 }
-/*
+
 void execute_command(char *command,char input[]){
 	if(strcmp(command,"echo")==0){
 		execute_echo(input);
@@ -1207,7 +998,7 @@ void execute_command(char *command,char input[]){
 	else{
 		execute_c(input);
 	}
-}*/
+}
 char *trim_whitespace( char *s){
 	while(*s && isspace((unsigned char)*s)) s++;
 	if(*s =='\0') return s;
@@ -1220,88 +1011,136 @@ char *trim_whitespace( char *s){
 }
 
 void execute_pipeline(char *input){
-	char *copy=strdup(input);
+#define MAX 100
+	char *copy = strdup(input);
+	int stage_count = 0;
+	char *saveptr = NULL;
 	char *stage_cmds[MAX];
-	int stage_count=0;
-	char *saveptr=NULL;
-	char *tok=strtok_r(copy,"|", &saveptr);
-	while(tok && stage_count < MAX){
-		stage_cmds[stage_count++]=trim_whitespace(tok);
-		tok=strtok_r(NULL,"|", &saveptr);
+	char cmd_name[MAX];
+	if(strchr(input, '|')== NULL){
+		if(retrieve_command(input,cmd_name,sizeof(cmd_name)) && strcmp(cmd_name,"cd")==0){
+			execute_cd(input);
+			free(copy);
+			return;
+		}
 	}
-	if(stage_count ==0){free(copy); return;}
+
+	char *token = strtok_r(copy,"|", &saveptr);
+	while(token !=NULL && stage_count < MAX){
+		char *trimmed = trim_whitespace(token);
+		stage_cmds[stage_count++]= trimmed;
+		token= strtok_r(NULL,"|", &saveptr);
+	}
+	if(token !=NULL){
+		fprintf(stderr, "shell: too many pipeline stages\n");
+		free(copy);
+		
+		return;
+	}
+	if(stage_count ==0){
+		free(copy);
+		return;
+	}
 	int prev_fd=-1;
 	int pipefd[2];
 	pid_t pids[MAX];
-	for(int i=0; i<stage_count; i++){
-		if(i< stage_count-1){
-			if(pipe(pipefd)<0){perror("pipe"); return;}
+	for(int i=0; i< stage_count; i++){
+		if(i < stage_count-1){
+			if(pipe(pipefd)<0){
+				perror("pipe");
+				//cleanup
+				if(prev_fd >=0) close(prev_fd);
+				for(int j=0; j<i; j++) waitpid(pids[j],NULL,0);
+				free(copy);
+				
+				return;
+			}
 		}
 		else {
 			pipefd[0]=pipefd[1]=-1;
 		}
-		pid_t pid=fork();
+		pid_t pid= fork();
 		if(pid<0){
-			perror("fork");
+			perror("pid");
+			if(pipefd[0]>=0) close(pipefd[0]);
+			if(pipefd[1]>=0) close(pipefd[1]);
+			if(prev_fd>=0) close(prev_fd);
+			for(int j=0; j<i; j++) waitpid(pids[j],NULL,0);
+			free(copy);
 			return;
 		}
 		if(pid==0){
-			in_pipeline_child=true;
 			if(prev_fd>=0){
-				dup2(prev_fd, STDIN_FILENO);
+				if(dup2(prev_fd, STDIN_FILENO)<0){
+					perror("dup2 stdin");
+					_exit(1);
+				}
 			}
-			if(i < stage_count-1){dup2(pipefd[1],STDOUT_FILENO);}
+			if(i< stage_count-1){
+				if(dup2(pipefd[1],STDOUT_FILENO)<0){
+					perror("dup2 stdout");
+					_exit(1);
+				}
+			}
 			if(prev_fd>=0) close(prev_fd);
-			if(pipefd[0]>=0) close(pipefd[0]);
+			if(pipefd[0]>=0)close(pipefd[0]);
 			if(pipefd[1]>=0) close(pipefd[1]);
-			char cmd_name[MAX];
-			if(!retrieve_command(stage_cmds[i], cmd_name,sizeof(cmd_name))){
+			if(!retrieve_command(stage_cmds[i], cmd_name, sizeof(cmd_name))){
 				_exit(0);
 			}
-			int status=execute_command(cmd_name,stage_cmds[i]);
-			_exit(status);
+			execute_command(cmd_name,stage_cmds[i]);
+			_exit(0);
 		}
-		pids[i]=pid;
+		pids[i] = pid;
 		if(prev_fd >=0) close(prev_fd);
 		if(pipefd[1]>=0) close(pipefd[1]);
-		prev_fd=(i<stage_count-1) ? pipefd[0]:-1;
+		prev_fd = (i < stage_count-1) ? pipefd[0]:-1;
 	}
 	if(prev_fd>=0) close(prev_fd);
-	for(int i=0; i<stage_count; i++){
-		int wstatus;
-		waitpid(pids[i],&wstatus,0);
+	int status;
+	for(int i=0; i< stage_count; i++){
+		waitpid(pids[i], &status, 0);
 	}
 	free(copy);
 }
 int main(int argc, char *argv[]) {
   // Flush after every printf
+  int flag=1;
   setbuf(stdout, NULL);
-  while(1){
+  while(flag){
 
   // Uncomment this block to pass the first stage
   printf("$ ");
 
   // Wait for user input
-  char input[1024];
-  if(fgets(input, sizeof(input), stdin) == NULL){
+  char input[100];
+  if(fgets(input, 100, stdin) == NULL){
 	  printf("\n");
   }
   input[strcspn(input, "\n")]= '\0';
   if(input[0]=='\0'){
 	  continue;
   }
-  if(strcmp(input, "exit 0")==0) break;
-  if(strchr(input,'|')==NULL){
-	  char cmd_name[100];
-	  if(!retrieve_command(input,cmd_name,sizeof(cmd_name))) continue;
-	  int status=execute_command(cmd_name,input);
+  if(strcmp(input, "exit 0")==0){
+	  flag=0;
   }
- 
+ // else if(check_echo(input)){
+	 // char *arg = remove_command_and_get_string(input);
+	 // printf(%s,arg);
+ // }
+ // else{
+ // printf(%s: command not found, input);
+ // }
   else{
+  char command[100];
+  if(!retrieve_command(input, command, sizeof(command))){
+	  continue;
+  }
   execute_pipeline(input);
   }
   }
   
   return 0;
 }
+
 
