@@ -499,7 +499,7 @@ int execute_echo(char input[]){
 	const char *tok;
 	for(int i=0; argv[i]!=NULL; i++){
 		tok=argv[i];
-		if(strcmp(tok,">")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")==0){
+		if(strcmp(tok,">")==0 || strcmp(tok,">>")==0 || strcmp(tok,"1>>")==0 || strcmp(tok,"1>")){
 			if(argv[i+1]==NULL){
 				fprintf(stderr,"%s: syntax error: expected filename after %s\n",argv[0],tok);
 				return 1;
