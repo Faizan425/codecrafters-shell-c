@@ -11,6 +11,9 @@
 #include<sys/stat.h>
 #include<errno.h>
 # define MAX 100
+# define HISTORY_MAX 1000
+static char *history[HISTORY_MAX];
+static int history_count=0;
 static bool in_pipeline_child=false;
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
@@ -33,6 +36,25 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	snprintf(candidate_path, candidate_path_size, "%s/%s", use_dir, command);
 	return candidate_path;
 }
+int store_history(char *input){
+	if(history_count+1 > HISTORY_MAX){
+		free(history[0]);
+		memmove(&history[0],&history[1],sizeof(char*)*(HISTORY_MAX-1));
+	}
+	history[history_count++]=strdup(input);
+	if(!history[history_count-1]){
+		perror("strdup");
+		return 1;
+	}
+	return 0;
+}
+int execute_history(){
+	for(int i=0; i<history_count; i++){
+		printf("%5d %s\n",i+1,history[i]);
+	}
+	return 0;
+}
+
 int get_file(const char *args,  const char *file_name){
 	int fd=-1;
 	if(strcmp(args,">")==0 || strcmp(args,"1>")==0){
@@ -1138,19 +1160,24 @@ int execute_command(char *command, char input[]){
 		return 1;
 	}
 	int argc=get_arguments(inputs_copy,argv,MAX);
+	store_history(inputs_copy);
 	if(strcmp(command,"echo")==0){
-		return execute_echo(input);
+		return execute_echo(inputs_copy);
 	}
 	else if(strcmp(command,"cd")==0){
-		return execute_cd(input);
+		return execute_cd(inputs_copy);
 	}
 	else if(strcmp(command,"pwd")==0){
 		if(handle_redirections(argv)<0) _exit(1);
-		return execute_pwd(input);
+		return execute_pwd(inputs_copy);
 	}
 	else if(strcmp(command,"type")==0){
 		if(handle_redirections(argv)<0) _exit(1);
-		return execute_type(input);
+		return execute_type(inputs_copy);
+	}
+	else if(strcmp(command,"history")==0){
+		if(handle_redirections(argv)<0) _exit(1);
+		return execute_history();
 	}
 	else {
 		if(in_pipeline_child){
@@ -1290,15 +1317,18 @@ int main(int argc, char *argv[]) {
   if(input[0]=='\0'){
 	  continue;
   }
-  if(strcmp(input, "exit 0")==0) break;
+  if(strcmp(input, "exit 0")==0){
+	  store_history(trim_whitespace(input));
+	  break;
+  }
   if(strchr(input,'|')==NULL){
 	  char cmd_name[100];
 	  if(!retrieve_command(input,cmd_name,sizeof(cmd_name))) continue;
-	  int status=execute_command(cmd_name,input);
+	  int status=execute_command(cmd_name,trim_whitespace(input));
   }
  
   else{
-  execute_pipeline(input);
+  execute_pipeline(trim_whitespace(input));
   }
   }
   
