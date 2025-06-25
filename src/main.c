@@ -37,9 +37,10 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	return candidate_path;
 }
 int store_history(char *input){
-	if(history_count+1 > HISTORY_MAX){
+	if(history_count== HISTORY_MAX){
 		free(history[0]);
 		memmove(&history[0],&history[1],sizeof(char*)*(HISTORY_MAX-1));
+		history_count=HISTORY_MAX-1;
 	}
 	history[history_count++]=strdup(input);
 	if(!history[history_count-1]){
@@ -48,8 +49,34 @@ int store_history(char *input){
 	}
 	return 0;
 }
-int execute_history(){
-	for(int i=0; i<history_count; i++){
+int execute_history(char *input){
+	char *argv[3];
+	int argc=get_arguments(input,argv,3);
+	if(argc==1){
+		for(int i=0; i<history_count; i++){
+			printf("%5d %s\n",i+1,history[i]);
+		}
+		return 0;
+	}
+	else if(argc >2){
+		fprintf(stderr,"history: invalid number: %s\n", argv[1]);
+		return 1;
+	}
+	char *endptr;
+	long n= strtol(argv[1],&endptr,10);
+	if(*endptr !='\0' || n<0){
+		fprintf(stderr, "history: invalid number: %s\n",argv[1]);
+		return 1;
+	}
+	int hc=history_count;
+	int start=0;
+	if(n>=hc){
+		start=0;
+	}
+	else{
+		start=hc-(int)n;
+	}
+	for(int i=start; i<hc; i++){
 		printf("%5d %s\n",i+1,history[i]);
 	}
 	return 0;
@@ -1177,7 +1204,7 @@ int execute_command(char *command, char input[]){
 	}
 	else if(strcmp(command,"history")==0){
 		if(handle_redirections(argv)<0) _exit(1);
-		return execute_history();
+		return execute_history(input);
 	}
 	else {
 		if(in_pipeline_child){
