@@ -10,10 +10,12 @@
 #include<fcntl.h>
 #include<sys/stat.h>
 #include<errno.h>
+#include<readline/readline.h>
+#include<readline/history.h>
 # define MAX 100
 # define HISTORY_MAX 1000
 static char *history[HISTORY_MAX];
-static int history_count=0;
+//static int history_count=0;
 static bool in_pipeline_child=false;
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
@@ -36,7 +38,7 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	snprintf(candidate_path, candidate_path_size, "%s/%s", use_dir, command);
 	return candidate_path;
 }
-int store_history(char *input){
+/*int store_history(char *input){
 	if(history_count== HISTORY_MAX){
 		free(history[0]);
 		memmove(&history[0],&history[1],sizeof(char*)*(HISTORY_MAX-1));
@@ -48,36 +50,36 @@ int store_history(char *input){
 		return 1;
 	}
 	return 0;
-}
+}*/
 int execute_history(char *input){
 	char *argv[3];
 	int argc=get_arguments(input,argv,3);
+	HIST_ENTRY **hl=history_list();
+	int start=0;
 	if(argc==1){
-		for(int i=0; i<history_count; i++){
-			printf("%5d %s\n",i+1,history[i]);
+		for(int i=start; hl[i]; i++){
+			printf("%5d %s\n",i+1,hl[i]->line);
 		}
 		return 0;
 	}
-	else if(argc >2){
-		fprintf(stderr,"history: invalid number: %s\n", argv[1]);
-		return 1;
-	}
-	char *endptr;
-	long n= strtol(argv[1],&endptr,10);
-	if(*endptr !='\0' || n<0){
-		fprintf(stderr, "history: invalid number: %s\n",argv[1]);
-		return 1;
-	}
-	int hc=history_count;
-	int start=0;
-	if(n>=hc){
-		start=0;
+	else if(argc==2){
+		char *endptr;
+		long n=-1;
+		n=strtol(argv[1],&endptr,10);
+		if(*endptr !='\0' || n<0){
+			fprintf(stderr,"history: invalid number: %s\n",argv[1]);
+			return 1;
+		}
+		int total=where_history();
+		if(n >0 && n<total) start = total-n;
+		for(int i=start; hl[i]; i++){
+			printf("%5d %s\n",i+1,hl[i]->line);
+		}
+
 	}
 	else{
-		start=hc-(int)n;
-	}
-	for(int i=start; i<hc; i++){
-		printf("%5d %s\n",i+1,history[i]);
+		fprintf(stderr,"history: invalid number: %s\n", argv[1]);
+		return 1;
 	}
 	return 0;
 }
@@ -1187,7 +1189,7 @@ int execute_command(char *command, char input[]){
 		return 1;
 	}
 	int argc=get_arguments(inputs_copy,argv,MAX);
-	store_history(inputs_copy);
+	//store_history(inputs_copy);
 	if(strcmp(command,"echo")==0){
 		return execute_echo(inputs_copy);
 	}
@@ -1330,32 +1332,35 @@ void execute_pipeline(char *input){
 int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
-  while(1){
-
-  // Uncomment this block to pass the first stage
-  printf("$ ");
+  using_history();
+  stifle_history(1000);
+  char *line;
+  while((line=readline("$ "))!=NULL){
+	  if(*line){
+		  add_history(line);
+	  }
 
   // Wait for user input
-  char input[1024];
-  if(fgets(input, sizeof(input), stdin) == NULL){
+ // char input[1024];
+ /* if(fgets(input, sizeof(input), stdin) == NULL){
 	  printf("\n");
-  }
-  input[strcspn(input, "\n")]= '\0';
-  if(input[0]=='\0'){
+  }*/
+  //input[strcspn(input, "\n")]= '\0';
+  if(line[0]=='\0'){
 	  continue;
   }
-  if(strcmp(input, "exit 0")==0){
-	  store_history(trim_whitespace(input));
+  if(strcmp(line, "exit 0")==0){
+	  //store_history(trim_whitespace(line));
 	  break;
   }
-  if(strchr(input,'|')==NULL){
+  if(strchr(line,'|')==NULL){
 	  char cmd_name[100];
-	  if(!retrieve_command(input,cmd_name,sizeof(cmd_name))) continue;
-	  int status=execute_command(cmd_name,trim_whitespace(input));
+	  if(!retrieve_command(line,cmd_name,sizeof(cmd_name))) continue;
+	  int status=execute_command(cmd_name,trim_whitespace(line));
   }
  
   else{
-  execute_pipeline(trim_whitespace(input));
+  execute_pipeline(trim_whitespace(line));
   }
   }
   
