@@ -51,7 +51,14 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	}
 	return 0;
 }*/
-int execute_history_read(char *path){
+int execute_history_write(const char *path){
+	if(write_history(path)!=0){
+		perror("history -w");
+		return 1;
+	}
+	return 0;
+}
+int execute_history_read(const char *path){
 	if(read_history(path)<0){
 		perror("history -r");
 		return 1;
@@ -85,7 +92,12 @@ int execute_history(char *input){
 
 	}
 	else{
+		if(strcmp(argv[1],"-r")==0){
 		return execute_history_read(argv[2]);
+		}
+		else if(strcmp(argv[1],"-w")==0){
+			return execute_history_write(argv[2]);
+		}
 	}
 	return 0;
 }
