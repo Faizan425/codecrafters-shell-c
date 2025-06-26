@@ -71,7 +71,7 @@ int execute_history(char *input){
 			return 1;
 		}
 		int total=where_history();
-		if(n >0 && n<total) start = total-n;
+		if(n >0 && n<total) start = total-n-1;
 		for(int i=start; hl[i]; i++){
 			printf("%5d %s\n",i+1,hl[i]->line);
 		}
