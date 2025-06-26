@@ -119,13 +119,7 @@ int execute_history(char *input){
 			fprintf(stderr,"history: invalid arguments %s\n",argv[1]);
 			return 1;
 		}
-		if(histfile && *histfile){
-			if(write_history(histfile)!=0){
-				perror("history -w");
-				return 1;
-				//hmm
-			}
-		}
+		
 	}
 	return 0;
 }
@@ -1403,6 +1397,11 @@ int main(int argc, char *argv[]) {
   }
   if(strcmp(line, "exit 0")==0){
 	  //store_history(trim_whitespace(line));
+	  if(histfile && *histfile){
+		  if(write_history(histfile)!=0){
+			  perror("history -w");
+		  }
+	  }
 	  break;
   }
   if(strchr(line,'|')==NULL){
