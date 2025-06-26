@@ -16,6 +16,7 @@
 # define HISTORY_MAX 1000
 //static char *history[HISTORY_MAX];
 //static int history_count=0;
+const char *histfile;
 static int last_appended=0;
 static bool in_pipeline_child=false;
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
@@ -54,13 +55,13 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 }*/
 int execute_history_append(const char *path){
 	int total=where_history();
-	int to_write=total-last_appended+1;
+	int to_write=total-last_appended;
 	if(to_write >0){
 		if(append_history(to_write,path)!=0){
 			perror("history -a");
 			return 1;
 		}
-		last_appended=total+1;
+		last_appended=total;
 	}
 	return 0;
 }
@@ -117,6 +118,12 @@ int execute_history(char *input){
 		else{
 			fprintf(stderr,"history: invalid arguments %s\n",argv[1]);
 			return 1;
+		}
+		if(histfile && *histfile){
+			if(write_history(histfile)!=0){
+				perror("history -w");
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -1372,6 +1379,12 @@ int main(int argc, char *argv[]) {
   setbuf(stdout, NULL);
   using_history();
   stifle_history(1000);
+  histfile=getenv("HISTFILE");
+  if(histfile && *histfile){
+	  if(read_history(histfile)!=0){
+		  //file doesn't exist yet
+	  }
+  }
   char *line;
   while((line=readline("$ "))!=NULL){
 	  if(*line){
