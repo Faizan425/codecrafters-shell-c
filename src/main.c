@@ -14,8 +14,9 @@
 #include<readline/history.h>
 # define MAX 100
 # define HISTORY_MAX 1000
-static char *history[HISTORY_MAX];
+//static char *history[HISTORY_MAX];
 //static int history_count=0;
+static int last_appended=0;
 static bool in_pipeline_child=false;
 int retrieve_command(char input[], char *command, size_t cmd_buf_size);
 int  get_arguments(char* inputs_copy,char **argument, int max_args);
@@ -51,6 +52,18 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	}
 	return 0;
 }*/
+int execute_history_append(const char *path){
+	int total=where_history();
+	int to_write=total-last_appended;
+	if(to_write >0){
+		if(append_history(to_write,path)!=0){
+			perror("history -a");
+			return 1;
+		}
+		last_appended=total;
+	}
+	return 0;
+}
 int execute_history_write(const char *path){
 	if(write_history(path)!=0){
 		perror("history -w");
@@ -97,6 +110,13 @@ int execute_history(char *input){
 		}
 		else if(strcmp(argv[1],"-w")==0){
 			return execute_history_write(argv[2]);
+		}
+		else if(strcmp(argv[1],"-a")==0){
+			return execute_history_append(argv[2]);
+		}
+		else{
+			fprintf(stderr,"history: invalid arguments %s\n",argv[1]);
+			return 1;
 		}
 	}
 	return 0;
