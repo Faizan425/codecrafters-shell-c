@@ -54,13 +54,13 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 }*/
 int execute_history_append(const char *path){
 	int total=where_history();
-	int to_write=total-last_appended-1;
+	int to_write=total-last_appended+1;
 	if(to_write >0){
 		if(append_history(to_write,path)!=0){
 			perror("history -a");
 			return 1;
 		}
-		last_appended=total-1;
+		last_appended=total+1;
 	}
 	return 0;
 }
