@@ -123,6 +123,7 @@ int execute_history(char *input){
 			if(write_history(histfile)!=0){
 				perror("history -w");
 				return 1;
+				//hmm
 			}
 		}
 	}
