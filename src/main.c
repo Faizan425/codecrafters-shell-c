@@ -51,9 +51,16 @@ char* build_path(const char *path_token, const char *command,char* candidate_pat
 	}
 	return 0;
 }*/
+int execute_history_read(char *path){
+	if(read_history(path)<0){
+		perror("history -r");
+		return 1;
+	}
+	return 0;
+}
 int execute_history(char *input){
-	char *argv[3];
-	int argc=get_arguments(input,argv,3);
+	char *argv[MAX];
+	int argc=get_arguments(input,argv,MAX);
 	HIST_ENTRY **hl=history_list();
 	int start=0;
 	if(argc==1){
@@ -78,8 +85,7 @@ int execute_history(char *input){
 
 	}
 	else{
-		fprintf(stderr,"history: invalid number: %s\n", argv[1]);
-		return 1;
+		return execute_history_read(argv[2]);
 	}
 	return 0;
 }
