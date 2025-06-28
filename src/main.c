@@ -1380,7 +1380,7 @@ static char *path_generator(const char *text, int state){
 			for(int i=0; dirs[i]; i++) free(dirs[i]);
 			free(dirs);
 		}
-	}
+	
 	char *path=strdup(getenv("PATH")? getenv("PATH"): "");
 	if(!path) return NULL;
 	// first pass: count how many entries
@@ -1400,7 +1400,7 @@ static char *path_generator(const char *text, int state){
 	dirs[counter]=NULL;
 	dir_i=0;
 	entry_i=0;
-	
+}
 	while(dirs[dir_i]){
 		if(state==0 || entry_i==0){
 			n=scandir(dirs[dir_i], &namelist,NULL,alphasort);
