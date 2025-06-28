@@ -1418,7 +1418,7 @@ static char *path_generator(const char *text, int state){
 			if(strncmp(name,text,strlen(text))==0){
 
 				char *m=malloc(strlen(name)+2);
-				sprintf(m,"%s ",name);
+				sprintf(m,"%s",name);
 				entry_i++;
 				return m;
 			}
