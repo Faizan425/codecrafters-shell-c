@@ -1385,8 +1385,9 @@ static char *path_generator(const char *text, int state){
 	if(!path) return NULL;
 	// first pass: count how many entries
 	int count=1; // for trailing null
+	// count ':' to size 'dirs'
 	for(char *p=path; *p; p++) if(*p==':') count++;
-	dirs=malloc(sizeof(char*) * count);
+	dirs=malloc((count+1)*sizeof *dirs);
 	if(!dirs){free(path); return NULL;}
 	int i=0;
 	char *saveptr=NULL;
@@ -1397,6 +1398,7 @@ static char *path_generator(const char *text, int state){
 		dirs[counter++]=strdup(tok);
 		tok=strtok_r(NULL,":",&saveptr);
 	}
+	free(path);
 	dirs[counter]=NULL;
 	dir_i=0;
 	entry_i=0;
@@ -1404,7 +1406,7 @@ static char *path_generator(const char *text, int state){
 	while(dirs[dir_i]){
 		if(state==0 || entry_i==0){
 			n=scandir(dirs[dir_i], &namelist,NULL,alphasort);
-			entry_i=0;
+			if(n<0){dir_i++; continue;}
 		}
 		for(; entry_i<n; entry_i++){
 			const char *name=namelist[entry_i]->d_name;
