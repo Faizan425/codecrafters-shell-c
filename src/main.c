@@ -1369,6 +1369,35 @@ void execute_pipeline(char *input){
 	}
 	free(copy);
 }
+const char *builtins[]= {"echo", "exit","pwd","cd","history","type", NULL};
+char *builtin_generator(const char *text, int state){
+	static int idx, len;
+	char *name;
+	if(state==0){
+		idx=0;
+		len=strlen(text);
+	}
+	while((name= (char*)builtins[idx++])!=NULL){
+		if(strncmp(name,text,len)==0){
+			size_t n=strlen(name);
+			char *match = malloc(n+2);
+			strcpy(match,name);
+			match[n]= ' ';
+			match[n+1]='\0';
+			return match
+		}
+	}
+	// No more matches
+	return NULL;
+}
+char **my_completion(const char *text, int start, int end){
+	//only attempt to complete at the start of the line
+	if(start!=0){
+		return NULL; // no other completions.
+	}
+	//rl_completion_matches will repeatedly call your generator
+	return rl_completion_matches(text,builtin_generator);
+}
 int main(int argc, char *argv[]) {
   // Flush after every printf
   setbuf(stdout, NULL);
@@ -1380,6 +1409,10 @@ int main(int argc, char *argv[]) {
 		  //file doesn't exist yet
 	  }
   }
+  // bind <TAB>
+  rl_bind_key('\t', rl_complete);
+  // set completion callback
+  rl_attempted_completion_function = my_completion;
   char *line;
   while((line=readline("$ "))!=NULL){
 	  if(*line){
