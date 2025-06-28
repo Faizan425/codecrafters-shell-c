@@ -1384,7 +1384,7 @@ char *builtin_generator(const char *text, int state){
 			strcpy(match,name);
 			match[n]= ' ';
 			match[n+1]='\0';
-			return match
+			return match;
 		}
 	}
 	// No more matches
