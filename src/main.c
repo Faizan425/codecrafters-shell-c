@@ -1413,7 +1413,7 @@ static char *path_generator(const char *text, int state){
 			}
 		}
 		// try each file in the directory
-		for(; entry_i; entry_i++){
+		for(; entry_i<n; entry_i++){
 			const char *name = namelist[entry_i]->d_name;
 			if(strncmp(name,text,strlen(text))==0){
 
