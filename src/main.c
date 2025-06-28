@@ -1505,15 +1505,16 @@ char *builtin_generator(const char *text, int state){
 }
 char **my_completion(const char *text, int start, int end){
 	//only attempt to complete at the start of the line
-	if(start!=0){
+	if(start!=0)
+		return NULL;
 		// first try builtins
 		char **matches = rl_completion_matches(text,builtin_generator);
 		if(matches) return matches;
 		// if no builtin match, try external commands
 		return rl_completion_matches(text, path_generator);
-	}
+	
 	//rl_completion_matches will repeatedly call your generator
-	return NULL;
+	
 }
 int main(int argc, char *argv[]) {
   // Flush after every printf
