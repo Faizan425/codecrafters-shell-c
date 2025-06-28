@@ -12,6 +12,7 @@
 #include<errno.h>
 #include<readline/readline.h>
 #include<readline/history.h>
+#include<dirent.h>
 # define MAX 100
 # define HISTORY_MAX 1000
 //static char *history[HISTORY_MAX];
@@ -1369,6 +1370,112 @@ void execute_pipeline(char *input){
 	}
 	free(copy);
 }
+static char *path_generator(const char *text, int state){
+	static char **dirs=NULL;  //array of path dirs
+	static int dir_i, entry_i;
+	static struct dirent **namelist;
+	int n;
+	if(state==0){
+		if(dirs){
+			for(int i=0; dirs[i]; i++) free(dirs[i]);
+			free(dirs);
+		}
+	}
+	char *path=strdup(getenv("PATH")? getenv("PATH"): "");
+	if(!path) return NULL;
+	// first pass: count how many entries
+	int count=1; // for trailing null
+	for(char *p=path; *p; p++) if(*p==':') count++;
+	dirs=malloc(sizeof(char*) * count);
+	if(!dirs){free(path); return NULL;}
+	int i=0;
+	char *saveptr=NULL;
+	char *tok;
+	tok=strtok_r(path,":", &saveptr);
+	int counter=0;
+	while(tok){
+		dirs[counter++]=strdup(tok);
+		tok=strtok_r(NULL,":",&saveptr);
+	}
+	dirs[counter]=NULL;
+	dir_i=0;
+	entry_i=0;
+	
+	while(dirs[dir_i]){
+		if(state==0 || entry_i==0){
+			n=scandir(dirs[dir_i], &namelist,NULL,alphasort);
+			entry_i=0;
+		}
+		for(; entry_i<n; entry_i++){
+			const char *name=namelist[entry_i]->d_name;
+			if(strncmp(name,text,strlen(text))==0){
+				//build match plus space
+				char *m=malloc(strlen(name)+2);
+				sprintf(m,"%s ",name);
+				entry_i++;
+				return m;
+			}
+		}
+		// nothing matched in this directory move on
+		for(int j=0; j<n; j++) free(namelist[j]);
+		free(namelist);
+		dir_i++;
+		entry_i=0;
+	}
+	return NULL;
+}
+/*
+char *path_generator(const char *text, int state){
+	char *customs[MAX];
+	char *saveptr=NULL;
+	const char *path=getenv("PATH");
+	char *tok=strtok_r(path,":",&saveptr);
+	int count=0;
+	while(tok && count<MAX){
+		customs[count++]=tok;
+		tok=strtok_r(NULL,":",&saveptr);
+	}
+	customs[count]=NULL;
+	static int idx, len;
+	if(state==0){
+		idx=0;
+		len=strlen(text);
+	}
+	char *name;
+	while((name=(char*)customs[idx++])!=NULL){
+		if(strncmp(name,text,len)==0){
+			size_t n=strlen(name);
+			DIR *d=NULL;
+			char *match;
+			if(strchr(name,"/")!=NULL){
+				d=opendir(name);
+				if(!d){
+					perror("opendir");
+					return 1;
+				}
+			}
+			if(!d){
+				if(access(name, X_OK)==0){
+				       match=malloc(n+1);
+				       strcpy(match,name);
+				       match[n]='\0';
+				}
+			}
+			else{
+				while((dir = readdir(d))!=NULL){
+					if(access(dir->d_name,X_OK)==0){
+						match=malloc(n+1);
+						strcpy(match,name);
+						match[n]='\0';
+					}
+				}
+			}
+			return match;
+		}
+	}
+	return NULL;
+
+}*/
 const char *builtins[]= {"echo", "exit","pwd","cd","history","type", NULL};
 char *builtin_generator(const char *text, int state){
 	static int idx, len;
@@ -1392,10 +1499,14 @@ char *builtin_generator(const char *text, int state){
 char **my_completion(const char *text, int start, int end){
 	//only attempt to complete at the start of the line
 	if(start!=0){
-		return NULL; // no other completions.
+		// first try builtins
+		char **matches = rl_completion_matches(text,builtin_generator);
+		if(matches) return matches;
+		// if no builtin match, try external commands
+		return rl_completion_matches(text, path_generator);
 	}
 	//rl_completion_matches will repeatedly call your generator
-	return rl_completion_matches(text,builtin_generator);
+	return NULL;
 }
 int main(int argc, char *argv[]) {
   // Flush after every printf
