@@ -1380,10 +1380,9 @@ char *builtin_generator(const char *text, int state){
 	while((name= (char*)builtins[idx++])!=NULL){
 		if(strncmp(name,text,len)==0){
 			size_t n=strlen(name);
-			char *match = malloc(n+2);
+			char *match = malloc(n+1);
 			strcpy(match,name);
-			match[n]= ' ';
-			match[n+1]='\0';
+			match[n]= '\0';
 			return match;
 		}
 	}
