@@ -1372,8 +1372,8 @@ void execute_pipeline(char *input){
 }
 static char *path_generator(const char *text, int state){
 	static char **dirs=NULL;  //array of path dirs
-	static int dir_i, entry_i;
-	static struct dirent **namelist;
+	static int dir_i, entry_i; // which dir, which entry in that dir
+	static struct dirent **namelist; // entries from scandir
 	int n;
 	if(state==0){
 		if(dirs){
@@ -1400,18 +1400,23 @@ static char *path_generator(const char *text, int state){
 	}
 	free(path);
 	dirs[counter]=NULL;
-	dir_i=0;
-	entry_i=0;
+	dir_i=entry_i=0; //reset scanning state
 }
 	while(dirs[dir_i]){
-		if(state==0 || entry_i==0){
-			n=scandir(dirs[dir_i], &namelist,NULL,alphasort);
-			if(n<0){dir_i++; continue;}
+		// on first entry into this dir, do the scandir
+		if(entry_i==0){
+			n=scandir(dirs[dir_i], &namelist, NULL, alphasort);
+			if(n<0){
+				// skip unreadable/nonexistent dirs
+				dir_i++;
+				continue;
+			}
 		}
-		for(; entry_i<n; entry_i++){
-			const char *name=namelist[entry_i]->d_name;
+		// try each file in the directory
+		for(; entry_i; entry_i++){
+			const char *name = namelist[entry_i]->d_name;
 			if(strncmp(name,text,strlen(text))==0){
-				//build match plus space
+
 				char *m=malloc(strlen(name)+2);
 				sprintf(m,"%s ",name);
 				entry_i++;
